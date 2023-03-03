@@ -2,49 +2,26 @@
 
 namespace DWE {
 #ifdef DWE_DEBUG
-    const char* KeyPressEvent::verbose()
+    std::string KeyPressEvent::verbose()
     {
-        _debug_buffer = (char*)malloc(sizeof(char)*20);
-        sprintf(_debug_buffer, "Key Pressed: %d", _code);
-        return _debug_buffer;
+        std::string str("Key Pressed: ");
+        str += std::to_string(_code);
+        return str;
     }
 
-    const char* KeyReleaseEvent::verbose()
+    std::string KeyReleaseEvent::verbose()
     {
-        _debug_buffer = (char*)malloc(sizeof(char)*20);
-        sprintf(_debug_buffer, "Key Released: %d", _code);
-        return _debug_buffer;
+        std::string str("Key Released: ");
+        str += std::to_string(_code);
+        return str;
     }
 
-    const char* KeyRepeatEvent::verbose()
+    std::string KeyRepeatEvent::verbose()
     {
-        _debug_buffer = (char*)malloc(sizeof(char)*20);
-        sprintf(_debug_buffer, "Key Repeated: %d", _code);
-        return _debug_buffer;
+        std::string str("Key Repeated: ");
+        str += std::to_string(_code);
+        return str;
     }
 #endif
-    KeyPressEvent::~KeyPressEvent()
-    {
-#ifdef DWE_DEBUG
-        if(_debug_buffer)
-            free(_debug_buffer);
-#endif
-    }
-
-    KeyReleaseEvent::~KeyReleaseEvent()
-    {
-#ifdef DWE_DEBUG
-        if(_debug_buffer)
-            free(_debug_buffer);
-#endif
-    }
-
-    KeyRepeatEvent::~KeyRepeatEvent()
-    {
-#ifdef DWE_DEBUG
-        if(_debug_buffer)
-            free(_debug_buffer);
-#endif
-    }
 
 }

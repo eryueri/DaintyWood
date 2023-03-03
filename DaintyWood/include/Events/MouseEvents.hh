@@ -8,13 +8,13 @@ namespace DWE {
         MouseMoveEvent() = delete;
         MouseMoveEvent(float xpos, float ypos)
             : _x_pos(xpos), _y_pos(ypos) {}
-        ~MouseMoveEvent();
+        // ~MouseMoveEvent();
 
         EVENT_CLASS_TYPE(MouseMove);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Mouse);
 
 #ifdef DWE_DEBUG
-        const char * verbose() override;
+        std::string verbose() override;
 #endif
 
     private:
@@ -26,13 +26,13 @@ namespace DWE {
         MouseButtonPressEvent() = delete;
         MouseButtonPressEvent(int code)
             : _code(code) {}
-        ~MouseButtonPressEvent();
+        // ~MouseButtonPressEvent();
 
         EVENT_CLASS_TYPE(MouseButtonPress);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Mouse);
 
 #ifdef DWE_DEBUG
-        const char * verbose() override;
+        std::string verbose() override;
 #endif
 
     private:
@@ -44,13 +44,13 @@ namespace DWE {
         MouseButtonReleaseEvent() = delete;
         MouseButtonReleaseEvent(int code)
             : _code(code) {}
-        ~MouseButtonReleaseEvent();
+        // ~MouseButtonReleaseEvent();
 
         EVENT_CLASS_TYPE(MouseButtonRelease);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Mouse);
 
 #ifdef DWE_DEBUG
-        const char * verbose() override;
+        std::string verbose() override;
 #endif
 
     private:
@@ -62,13 +62,13 @@ namespace DWE {
         MouseButtonRepeatEvent() = delete;
         MouseButtonRepeatEvent(int code)
             : _code(code) {}
-        ~MouseButtonRepeatEvent();
+        // ~MouseButtonRepeatEvent();
 
         EVENT_CLASS_TYPE(MouseButtonRepeat);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Mouse);
 
 #ifdef DWE_DEBUG
-        const char * verbose() override;
+        std::string verbose() override;
 #endif
 
     private:
@@ -80,13 +80,13 @@ namespace DWE {
         MouseScrollEvent() = delete;
         MouseScrollEvent(float xoffset, float yoffset)
             : _x_offset(xoffset), _y_offset(yoffset) {}
-        ~MouseScrollEvent();
+        // ~MouseScrollEvent();
 
         EVENT_CLASS_TYPE(MouseScroll);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Mouse);
 
 #ifdef DWE_DEBUG
-        const char * verbose() override;
+        std::string verbose() override;
 #endif
 
     private:

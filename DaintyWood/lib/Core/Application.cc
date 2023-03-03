@@ -33,7 +33,7 @@ namespace DWE {
     void Application::onEvent(Event& e)
     {
 #ifdef DWE_DEBUG
-        _logger->log(LogLevel::trace, e.verbose());
+        _logger->log(LogLevel::trace, e.verbose().c_str());
 #endif
     }
 }

@@ -36,4 +36,5 @@ target_link_libraries(DWE
     PRIVATE
     vulkan
     glfw
-    spdlog)
+    spdlog::spdlog # remember to link spdlog as "spdlog::spdlog" or there will be link error
+)

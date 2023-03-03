@@ -25,6 +25,7 @@ namespace DWE {
 
     class Event {
     public:
+        ~Event() = default;
         virtual EventType getEventType() const = 0;
         virtual uint8_t getEventCategoryFlags() const = 0;
 
@@ -32,8 +33,7 @@ namespace DWE {
 
 #ifdef DWE_DEBUG
     public:
-        virtual const char* verbose() = 0;
-        char* _debug_buffer = nullptr;
+        virtual std::string verbose() = 0;
 #endif
     };
 

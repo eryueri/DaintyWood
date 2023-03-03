@@ -7,13 +7,13 @@ namespace DWE {
     public:
         KeyPressEvent() = delete;
         KeyPressEvent(int code) : _code(code) {}
-        ~KeyPressEvent();
+        // ~KeyPressEvent();
 
         EVENT_CLASS_TYPE(KeyPress);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Keyboard);
         
 #ifdef DWE_DEBUG
-        const char* verbose() override;
+        std::string verbose() override;
 #endif
         
     private:
@@ -24,13 +24,13 @@ namespace DWE {
     public:
         KeyReleaseEvent() = delete;
         KeyReleaseEvent(int code) : _code(code) {}
-        ~KeyReleaseEvent();
+        // ~KeyReleaseEvent();
 
         EVENT_CLASS_TYPE(KeyRelease);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Keyboard);
         
 #ifdef DWE_DEBUG
-        const char* verbose() override;
+        std::string verbose() override;
 #endif
         
     private:
@@ -41,13 +41,13 @@ namespace DWE {
     public:
         KeyRepeatEvent() = delete;
         KeyRepeatEvent(int code) : _code(code) {}
-        ~KeyRepeatEvent();
+        // ~KeyRepeatEvent();
 
         EVENT_CLASS_TYPE(KeyRepeat);
         EVENT_CLASS_CATEGORY(EventCategory::Input | EventCategory::Keyboard);
         
 #ifdef DWE_DEBUG
-        const char* verbose() override;
+        std::string verbose() override;
 #endif
         
     private:

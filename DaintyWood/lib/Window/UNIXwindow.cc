@@ -33,6 +33,7 @@ namespace DWE {
         {
             glfwPollEvents();
         }
+        glfwTerminate();
     }
 
     void UNIXwindow::setEventCallback(const CallbackFunc& func)

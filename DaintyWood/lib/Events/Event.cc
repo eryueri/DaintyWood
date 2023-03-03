@@ -35,4 +35,5 @@ namespace DWE {
     {
         return category & getEventCategoryFlags();
     }
+
 }
