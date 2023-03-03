@@ -7,6 +7,7 @@ include(./cmake/FindSpdlog.cmake)
 add_library(DWE
     STATIC
     ./lib/Core/Application.cc
+    ./lib/Core/Logger.cc
     ./lib/Events/Event.cc
     ./lib/Events/KeyEvents.cc
     ./lib/Events/MouseEvents.cc

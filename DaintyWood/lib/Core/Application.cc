@@ -11,6 +11,12 @@ namespace DWE {
         _window = UNIXwindow::getInstance();
         _on_event = std::bind(&Application::onEvent, this, std::placeholders::_1);
         _window->setEventCallback(_on_event);
+#ifdef DWE_DEBUG
+        _logger = new Logger("AppConsole");
+        _logger->setPattern("%^[%T] %n: %v%$");
+        _logger->setLevel(LogLevel::trace);
+        _logger->flushOn(LogLevel::trace);
+#endif
     }
 
     Application::~Application()
@@ -27,7 +33,7 @@ namespace DWE {
     void Application::onEvent(Event& e)
     {
 #ifdef DWE_DEBUG
-        std::cerr << e.verbose() << std::endl;
+        _logger->log(LogLevel::trace, e.verbose());
 #endif
     }
 }
