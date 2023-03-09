@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <functional>
+#include <optional>
 
 #include <string>
 #include <vector>

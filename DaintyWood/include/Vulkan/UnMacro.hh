@@ -1,0 +1,1 @@
+#undef CHECK_NULL

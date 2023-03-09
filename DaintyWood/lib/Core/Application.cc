@@ -1,14 +1,12 @@
 #include "Core/Application.hh"
 
-#include "Window/UNIXwindow.hh"
-
 #include "Events/KeyEvents.hh"
 
 namespace DWE {
     Application::Application()
     {
         std::cout << "hello project\n";
-        _window = UNIXwindow::getInstance();
+        _window = Window::getInstance();
         _on_event = std::bind(&Application::onEvent, this, std::placeholders::_1);
         _window->setEventCallback(_on_event);
 #ifdef DWE_DEBUG
@@ -17,6 +15,7 @@ namespace DWE {
         _logger->setLevel(LogLevel::trace);
         _logger->flushOn(LogLevel::trace);
 #endif
+        _vulkan_instance = new VulkanInstance{_window->getGLFWwindowPointer()};
     }
 
     Application::~Application()

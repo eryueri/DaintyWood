@@ -8,11 +8,14 @@ add_library(DWE
     STATIC
     ./lib/Core/Application.cc
     ./lib/Core/Logger.cc
+    ./lib/Core/Window.cc
     ./lib/Events/Event.cc
     ./lib/Events/KeyEvents.cc
     ./lib/Events/MouseEvents.cc
     ./lib/Events/WindowEvents.cc
-    ./lib/Window/UNIXwindow.cc
+    ./lib/Vulkan/Structs.cc
+    ./lib/Vulkan/Utils.cc
+    ./lib/Vulkan/VulkanInstance.cc
 )
 target_include_directories(DWE
     PRIVATE

@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Core/Logger.hh"
-#include "Window/Window.hh"
+#include "Core/Window.hh"
+#include "Vulkan/VulkanInstance.hh"
 
 #include "pch.hh"
 
@@ -14,8 +15,9 @@ namespace DWE {
 
         void onEvent(Event& e);
     private:
-        Window* _window;
-        CallbackFunc _on_event;
+        Window* _window = nullptr;
+        VulkanInstance* _vulkan_instance = nullptr;
+        EventCallbackFunc _on_event;
 
 #ifdef DWE_DEBUG
     private:
