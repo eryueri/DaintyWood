@@ -18,6 +18,8 @@ namespace DWE {
         vk::PhysicalDevice getGPU() const;
         vk::Device getLogicalDevice() const;
         vk::SurfaceKHR getSurface() const;
+    public:
+        vk::CommandBuffer getCommandBuffer(uint32_t index) const;
     private:
         void createInstance();
         void cleanInstance();
@@ -30,6 +32,10 @@ namespace DWE {
         void cleanSwapchain();
         void createImageViews();
         void createRenderPass();
+        void createCommandPools();
+        void createPrimaryCommandBuffers();
+        void createSecondaryCommandBuffer(uint32_t image_index, uint32_t secondary_buffer_index);
+        void createFramebuffers();
     private:
         GLFWwindow* const _glfw_window;
     private:
@@ -43,6 +49,12 @@ namespace DWE {
         vk::Extent2D _swapchain_extent;
         std::vector<vk::ImageView> _image_views;
         vk::RenderPass _render_pass = nullptr;
+        std::vector<vk::CommandPool> _command_pools;
+        vk::CommandPool _single_time_command_pool = nullptr;
+        std::vector<vk::CommandBuffer> _primary_command_buffers;
+        std::vector<std::vector<vk::CommandBuffer>> _secondary_command_buffers;
+        vk::CommandBuffer _single_time_command_buffer = nullptr;
+        std::vector<vk::Framebuffer> _framebuffers;
     private:
         std::vector<vk::Queue> _queues;
         std::optional<uint32_t> _graphics_queue_index, _present_queue_index;

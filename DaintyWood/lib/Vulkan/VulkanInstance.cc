@@ -3,9 +3,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "Vulkan/Macro.hh"
 #include "Vulkan/Utils.hh"
 
+#include "Vulkan/Macro.hh"
 namespace DWE {
     VulkanInstance::VulkanInstance(GLFWwindow* window) 
         : 
@@ -215,6 +215,61 @@ namespace DWE {
 
         _render_pass = _logical_device.createRenderPass(render_pass_create_info);
         CHECK_NULL(_render_pass);
+    }
+
+    void VulkanInstance::createCommandPools()
+    {
+        _command_pools.resize(_swapchain_images.size(), nullptr);
+        for (size_t i = 0; i < _command_pools.size(); ++i) {
+            vk::CommandPoolCreateInfo command_pool_create_info{};
+
+            command_pool_create_info.setQueueFamilyIndex(_graphics_queue_index.value())
+                                    .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+            _command_pools[i] = _logical_device.createCommandPool(command_pool_create_info);
+            CHECK_NULL(_command_pools[i]);
+        }
+        vk::CommandPoolCreateInfo single_time_command_pool_create_info{};
+        single_time_command_pool_create_info.setQueueFamilyIndex(_graphics_queue_index.value())
+                                            .setFlags(vk::CommandPoolCreateFlagBits::eTransient);
+        _single_time_command_pool = _logical_device.createCommandPool(single_time_command_pool_create_info);
+        CHECK_NULL(_single_time_command_pool);
+    }
+
+    void VulkanInstance::createPrimaryCommandBuffers()
+    {
+        _primary_command_buffers.resize(_command_pools.size(), nullptr);
+
+        for (size_t i = 0; i < _primary_command_buffers.size(); ++i) {
+            vk::CommandBufferAllocateInfo allocate_info{};
+            allocate_info
+                .setCommandPool(_command_pools[i])
+                .setLevel(vk::CommandBufferLevel::ePrimary)
+                .setCommandBufferCount(1);
+
+            _primary_command_buffers[i] = _logical_device.allocateCommandBuffers(allocate_info)[0];
+            CHECK_NULL(_primary_command_buffers[i]);
+        }
+    }
+
+    void VulkanInstance::createSecondaryCommandBuffer(uint32_t image_index, uint32_t secondary_buffer_index)
+    {
+
+    }
+
+    void VulkanInstance::createFramebuffers()
+    {
+        _framebuffers.resize(_swapchain_images.size());
+
+        for (size_t i = 0; i < _framebuffers.size(); ++i) {
+            vk::FramebufferCreateInfo framebuffer_create_info{};
+            framebuffer_create_info.setRenderPass(_render_pass)
+                                   .setAttachments(_image_views[i])
+                                   .setWidth(_swapchain_extent.width)
+                                   .setHeight(_swapchain_extent.height)
+                                   .setLayers(1);
+            _framebuffers[i] = _logical_device.createFramebuffer(framebuffer_create_info);
+            CHECK_NULL(_framebuffers[i]);
+        }
     }
 
     GLFWwindow* VulkanInstance::getGLFWwindow() const { return _glfw_window; }
