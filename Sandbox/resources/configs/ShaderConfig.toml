@@ -1,0 +1,12 @@
+[EntityVerexShader]
+    name = "EntityVertexShader"
+    filename = "../glslShaders/entity.vert.spv"
+    shaderType = "VertexShader"
+    vertexInfo.vertexDateFlags = []
+    uniformList.uniformFlags = ["ModelMatrix", "ViewMatrix", "ProjectionMatrix"]
+
+[EntityFragmentShader]
+    name = "EntityFragmentShader"
+    filename = "../glslShaders/entity.frag.spv"
+    shaderType = "FragmentShader"
+    samplerNameList = ["texSampler"]

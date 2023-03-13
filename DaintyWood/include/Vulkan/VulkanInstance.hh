@@ -1,8 +1,6 @@
 #pragma once 
 
 #include "pch.hh"
-
-#include "Vulkan/Structs.hh"
 #include "Vulkan/Utils.hh"
 
 struct GLFWwindow;

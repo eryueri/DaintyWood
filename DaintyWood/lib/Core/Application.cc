@@ -2,6 +2,10 @@
 
 #include "Events/KeyEvents.hh"
 
+#include <assimp/Importer.hpp>
+
+#include <toml++/toml.h>
+
 namespace DWE {
     Application::Application()
     {
@@ -31,7 +35,7 @@ namespace DWE {
 
     void Application::onEvent(Event& e)
     {
-#ifdef DWE_DEBUG
+#ifdef DWE_DEBUGG
         _logger->log(LogLevel::trace, e.verbose().c_str());
 #endif
     }

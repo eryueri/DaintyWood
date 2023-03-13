@@ -35,9 +35,11 @@ namespace DWE {
         glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
         vk::InstanceCreateInfo create_info{};
-        create_info.setPApplicationInfo(&app_info)
-                   .setEnabledExtensionCount(glfw_extension_count)
-                   .setPpEnabledExtensionNames(glfw_extensions);
+        create_info
+            .setPApplicationInfo(&app_info)
+            .setEnabledExtensionCount(glfw_extension_count)
+            .setPpEnabledExtensionNames(glfw_extensions)
+            .setEnabledLayerCount(0);
 
 #ifdef DWE_DEBUG
         std::vector<const char*> validation_layers = {"VK_LAYER_KHRONOS_validation"};
@@ -249,11 +251,30 @@ namespace DWE {
             _primary_command_buffers[i] = _logical_device.allocateCommandBuffers(allocate_info)[0];
             CHECK_NULL(_primary_command_buffers[i]);
         }
+
+        _secondary_command_buffers.resize(_primary_command_buffers.size());
     }
 
     void VulkanInstance::createSecondaryCommandBuffer(uint32_t image_index, uint32_t secondary_buffer_index)
     {
+        uint32_t allocate_count = secondary_buffer_index - _secondary_command_buffers.at(image_index).size() + 1;
+        if (allocate_count <= 0) return;
+        vk::CommandBufferAllocateInfo allocate_info{};
+        allocate_info
+            .setCommandPool(_command_pools[image_index])
+            .setLevel(vk::CommandBufferLevel::eSecondary)
+            .setCommandBufferCount(allocate_count);
 
+        std::vector<vk::CommandBuffer> temp_buffers = _logical_device.allocateCommandBuffers(allocate_info);
+
+        for (size_t i = 0; i < temp_buffers.size(); ++i) {
+            CHECK_NULL(temp_buffers.at(i));
+        }
+
+        _secondary_command_buffers.at(image_index)
+            .insert(_secondary_command_buffers.at(image_index).end(), 
+                    temp_buffers.begin(), 
+                    temp_buffers.end());
     }
 
     void VulkanInstance::createFramebuffers()

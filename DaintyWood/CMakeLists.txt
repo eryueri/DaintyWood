@@ -3,6 +3,8 @@ project(DaintyWood)
 include(./cmake/FindVulkan.cmake)
 include(./cmake/FindGLFW.cmake)
 include(./cmake/FindSpdlog.cmake)
+include(./cmake/FindTomlpp.cmake)
+include(./cmake/FindAssimp.cmake)
 
 add_library(DWE
     STATIC
@@ -13,7 +15,6 @@ add_library(DWE
     ./lib/Events/KeyEvents.cc
     ./lib/Events/MouseEvents.cc
     ./lib/Events/WindowEvents.cc
-    ./lib/Vulkan/Structs.cc
     ./lib/Vulkan/Utils.cc
     ./lib/Vulkan/VulkanInstance.cc
 )
@@ -40,4 +41,6 @@ target_link_libraries(DWE
     vulkan
     glfw
     spdlog::spdlog # remember to link spdlog as "spdlog::spdlog" or there will be link error
+    tomlplusplus
+    assimp
 )
