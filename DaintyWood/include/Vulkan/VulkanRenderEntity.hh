@@ -1,28 +1,42 @@
 #pragma once
 
+#include <Vulkan/VulkanEntity.hh>
+
 namespace DWE {
+    class VulkanInstance;
     class VulkanTexture;
     class VulkanMesh;
-    class VulkanRenderEntity {
+    class VulkanShader;
+    class VulkanRenderEntity : public VulkanEntity {
     public:
         void updateDescriptorSets();
+        void writeDrawingCommands() override;
     private:
-        void createGraphicsPipelineLayout();
-        void cleanGraphicsPipelineLayout();
+        void createPipelineLayout() override;
+        void cleanPipelineLayout();
 
-        void createGraphicsPipeline();
-        void cleanGraphicsPipeline();
-        void resetGraphicsPipeline();
+        void createPipeline() override;
+        void cleanPipeline();
+        void resetPipeline();
 
-        void createDescriptorPool(); 
+        void createDescriptorPool() override;
         void cleanDescriptorPool();
-        void createDescriptorSets();
+        void createDescriptorSets() override;
         void cleanDescriptorSets();
 
-        void updateDescriptorSet();
+        void updateDescriptorSet() override;
 
     private:
-        VulkanTexture* _vulkan_texture;
-        VulkanMesh* _vulkan_mesh;
+        VulkanInstance* _vulkan_instance = nullptr;
+        VulkanTexture* _vulkan_texture = nullptr;
+        VulkanMesh* _vulkan_mesh = nullptr;
+        VulkanShader* _vertex_shader = nullptr;
+        VulkanShader* _frag_shader = nullptr;
+    private:
+        vk::PipelineLayout _pipeline_layout = nullptr;
+        vk::Pipeline _graphics_pipeline = nullptr;
+
+        vk::DescriptorPool _descriptor_pool = nullptr;
+        std::vector<vk::DescriptorSet> _descriptor_sets;
     };
 }

@@ -1,7 +1,5 @@
 #include "Core/Application.hh"
 
-#include "Events/KeyEvents.hh"
-
 #include <assimp/Importer.hpp>
 
 #include <toml++/toml.h>
@@ -19,7 +17,7 @@ namespace DWE {
         _logger->setLevel(LogLevel::trace);
         _logger->flushOn(LogLevel::trace);
 #endif
-        _vulkan_instance = new VulkanInstance{_window->getGLFWwindowPointer()};
+        _renderer = new Renderer{_window->getGLFWwindowPointer()};
     }
 
     Application::~Application()
@@ -29,12 +27,24 @@ namespace DWE {
 
     void Application::run()
     {
+        _running = true;
         std::cout << "project says hello too\n";
-        _window->update();
+        while(_running) {
+            _window->update();
+        }
     }
 
     void Application::onEvent(Event& e)
     {
+        auto event_type = e.getEventType();
+        switch(event_type) {
+            case EventType::WindowClose:
+            {
+                _running = false;
+            } break;
+            default: break;
+        }
+
 #ifdef DWE_DEBUGG
         _logger->log(LogLevel::trace, e.verbose().c_str());
 #endif

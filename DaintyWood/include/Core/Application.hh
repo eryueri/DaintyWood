@@ -2,7 +2,7 @@
 
 #include "Core/Logger.hh"
 #include "Core/Window.hh"
-#include "Vulkan/VulkanInstance.hh"
+#include "Core/Renderer.hh"
 
 #include "pch.hh"
 
@@ -13,11 +13,15 @@ namespace DWE {
         ~Application();
         void run();
 
+        void loadEntity(std::string filename);
+
         void onEvent(Event& e);
     private:
+        bool _running = false;
         Window* _window = nullptr;
-        VulkanInstance* _vulkan_instance = nullptr;
         EventCallbackFunc _on_event;
+
+        Renderer* _renderer = nullptr;
 
 #ifdef DWE_DEBUG
     private:

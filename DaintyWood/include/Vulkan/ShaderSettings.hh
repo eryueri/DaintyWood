@@ -14,6 +14,7 @@ namespace  DWE {
         Position = BIT(1), 
         Color = BIT(2), 
         Texcord = BIT(3),
+        Normal = BIT(4),
     };
 
     struct VertexInfo {
@@ -51,4 +52,3 @@ namespace  DWE {
     uint8_t operator& (const uint8_t& a, const UniformFlags& b);
     uint8_t operator& (const UniformFlags& a, const uint8_t& b);
 }
-#undef BIT

@@ -198,7 +198,7 @@ namespace DWE {
                                     .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
         vk::AttachmentReference color_attachment_reference{};
         color_attachment_reference.setAttachment(0)
-                                  .setLayout(vk::ImageLayout::eAttachmentOptimal);
+                                  .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
         vk::SubpassDescription subpass_description{};
         subpass_description.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
                            .setColorAttachments(color_attachment_reference);
@@ -293,10 +293,120 @@ namespace DWE {
         }
     }
 
+    void VulkanInstance::createSyncObjects()
+    {
+        _image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        _render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        _inflight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+
+        vk::SemaphoreCreateInfo semaphore_create_info{};
+
+        vk::FenceCreateInfo fence_create_info{};
+        fence_create_info.setFlags(vk::FenceCreateFlagBits::eSignaled);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            _image_available_semaphores[i] = _logical_device.createSemaphore(semaphore_create_info);
+            CHECK_NULL(_image_available_semaphores[i]);
+            _render_finished_semaphores[i] = _logical_device.createSemaphore(semaphore_create_info);
+            CHECK_NULL(_render_finished_semaphores[i]);
+            _inflight_fences[i] = _logical_device.createFence(fence_create_info);
+            CHECK_NULL(_inflight_fences[i]);
+        }
+    }
+
+    uint32_t VulkanInstance::waitAvailableFrameBuffer()
+    {
+        uint32_t image_index{};
+        vk::Result result = _logical_device.acquireNextImageKHR(_swapchain, std::numeric_limits<uint64_t>::max(), _image_available_semaphores[_current_frame], _inflight_fences[_current_frame], &image_index);
+        result = _logical_device.waitForFences(1, &_inflight_fences[_current_frame], true, std::numeric_limits<uint64_t>::max());
+
+        result = _logical_device.resetFences(1, &_inflight_fences[_current_frame]);
+
+        return image_index;
+    }
+
+    void VulkanInstance::getRenderCommandBufferBegin(uint32_t image_index)
+    {
+        _logical_device.resetCommandPool(_command_pools[image_index]);
+        vk::CommandBufferBeginInfo begin_info{};
+        begin_info
+            .setFlags(vk::CommandBufferUsageFlags(0))
+            .setPInheritanceInfo(nullptr);
+        _primary_command_buffers[image_index].begin(begin_info);
+
+        vk::Viewport viewport{
+            0.0f, 0.0f, // x, y
+            (float)_swapchain_extent.width, (float)_swapchain_extent.height, 
+            0.0f, 1.0f  // min/max depth
+        };
+
+        vk::Rect2D scissor{
+            vk::Offset2D{ 0, 0 }, 
+            _swapchain_extent
+        };
+
+        vk::RenderPassBeginInfo render_pass_begin_info{};
+        render_pass_begin_info
+            .setRenderPass(_render_pass)
+            .setFramebuffer(_framebuffers[image_index])
+            .setRenderArea(scissor)
+            .setClearValues(_clear_color);
+
+        vk::CommandBuffer buffer = _primary_command_buffers[image_index];
+
+        buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+        buffer.setViewport(0, 1, &viewport);
+        buffer.setScissor(0, 1, &scissor);
+    }
+
+    void VulkanInstance::getRenderCommandBufferend(uint32_t image_index)
+    {
+        _primary_command_buffers[image_index].endRenderPass();
+        _primary_command_buffers[image_index].end();
+    }
+    
+    void VulkanInstance::submitCommands(uint32_t image_index)
+    {
+        vk::PipelineStageFlags wait_stages{vk::PipelineStageFlagBits::eColorAttachmentOutput};
+
+        vk::SubmitInfo submit_info{};
+        submit_info
+            .setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(&_image_available_semaphores[_current_frame])
+            .setSignalSemaphoreCount(1)
+            .setPSignalSemaphores(&_render_finished_semaphores[_current_frame])
+            .setWaitDstStageMask(wait_stages)
+            .setCommandBufferCount(1)
+            .setPCommandBuffers(&_primary_command_buffers[image_index]);
+
+        vk::Result result = _queues[_graphics_queue_index.value()].submit(1, &submit_info, _inflight_fences[_current_frame]);
+        if (result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to submit commands...");
+        }
+    }
+
+    void VulkanInstance::presentFrame()
+    {
+        vk::PresentInfoKHR present_info{};
+        present_info
+            .setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(&_render_finished_semaphores[_current_frame])
+            .setSwapchainCount(1)
+            .setPSwapchains(&_swapchain);
+
+        vk::Result result = _queues[_present_queue_index.value()].presentKHR(present_info);
+
+        if (result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to present image to swapchain...");
+        }
+    }
+
     GLFWwindow* VulkanInstance::getGLFWwindow() const { return _glfw_window; }
     vk::PhysicalDevice VulkanInstance::getGPU() const { return _gpu; }
     vk::Device VulkanInstance::getLogicalDevice() const { return _logical_device; }
     vk::SurfaceKHR VulkanInstance::getSurface() const { return _surface; }
+    vk::RenderPass VulkanInstance::getRenderPass() const { return _render_pass; }
+    vk::Extent2D VulkanInstance::getSwapchainExtent() const { return _swapchain_extent; }
 
     void VulkanInstance::cleanInstance() { _instance.destroy(); }
     void VulkanInstance::cleanSurface() { _instance.destroySurfaceKHR(_surface); }
@@ -314,7 +424,6 @@ namespace DWE {
         _logical_device.destroy(_swapchain);
 
     }
-
 }
 
 #include "Vulkan/UnMacro.hh"

@@ -30,11 +30,7 @@ namespace DWE {
 
     void Window::update()
     {
-        while(!glfwWindowShouldClose(_glfw_window))
-        {
-            glfwPollEvents();
-        }
-        glfwTerminate();
+        glfwPollEvents();
     }
 
     void Window::setEventCallback(const EventCallbackFunc& func)
