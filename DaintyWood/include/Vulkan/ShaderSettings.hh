@@ -32,13 +32,15 @@ namespace  DWE {
 
     struct UniformInfo {
         uint8_t uninform_flags;
-        uint32_t uniform_index;
     };
 
     struct ShaderSettings {
-        std::string shader_name;
-        std::filesystem::path file_path;
-        ShaderType shader_type;
+        std::optional<std::string> shader_name;
+        std::optional<std::string> compiled_file_path;
+        std::optional<std::string> shader_type;
+        std::vector<std::optional<std::string>> vertex_data_flags;
+        std::vector<std::optional<std::string>> uniform_data_flags;
+
         VertexInfo vertex_info;
         UniformInfo uniform_info;
     };

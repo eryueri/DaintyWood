@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
+#include "Vulkan/MeshSettings.hh"
+
 namespace DWE {
     enum class MeshCullMode : uint8_t {
         FrontFace, 

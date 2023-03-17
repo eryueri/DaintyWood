@@ -9,6 +9,8 @@ namespace DWE {
     class VulkanShader;
     class VulkanRenderEntity : public VulkanEntity {
     public:
+        VulkanRenderEntity();
+        ~VulkanRenderEntity();
         void updateDescriptorSets();
         void writeDrawingCommands() override;
     private:

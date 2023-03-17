@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Vulkan/TextureSettings.hh"
+
 namespace DWE {
     class VulkanInstance;
     class VulkanTexture {
