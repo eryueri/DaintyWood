@@ -13,6 +13,7 @@ namespace DWE {
     private:
         VulkanInstance* _instance;
     private:
+        std::string _texture_name;
         vk::Image _image;
     };
 }

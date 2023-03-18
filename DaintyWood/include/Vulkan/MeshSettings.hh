@@ -4,7 +4,9 @@
 
 namespace DWE {
     struct MeshSettings {
-        std::optional<std::string> name;
+        std::string root_dir = "./";
+        std::optional<std::string> mesh_name;
         std::optional<std::string> file_path;
+        std::optional<std::string> cull_mode;
     };
 }

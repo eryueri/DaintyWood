@@ -1,19 +1,33 @@
 #include "Vulkan/VulkanRenderEntity.hh"
 
 #include "Vulkan/VulkanInstance.hh"
-#include "Vulkan/VulkanTexture.hh"
-#include "Vulkan/VulkanMesh.hh"
-#include "Vulkan/VulkanShader.hh"
 
 #include "Vulkan/Macro.hh"
 namespace DWE {
+    VulkanRenderEntity::VulkanRenderEntity(EntitySettings settings)
+    {
+        static std::map<std::string, EntityType> entity_type_map{
+            {"RenderEntity", EntityType::RenderEntity}, 
+            {"ComputeEntity", EntityType::ComputeEntity}
+        };
+
+        static std::map<std::string, MeshCullMode> cull_mode_map{
+            {"None", MeshCullMode::None}, 
+            {"FrontFace", MeshCullMode::FrontFace}, 
+            {"BackFace", MeshCullMode::BackFace}
+        };
+    
+        _type = entity_type_map.at(settings.entity_type.value());
+        _cull_mode = cull_mode_map.at(settings.cull_mode.value());
+    }
+
     void VulkanRenderEntity::writeDrawingCommands()
     {
-        if (!_vulkan_texture) {
+        if (!_vulkan_textures.empty()) {
 
         }
 
-        if (!_vulkan_mesh) {
+        if (!_vulkan_meshes.empty()) {
 
         }
     }
@@ -70,7 +84,7 @@ namespace DWE {
             .setLineWidth(1.0f)
             .setFrontFace(vk::FrontFace::eCounterClockwise)
             .setDepthBiasEnable(false);
-        switch(_vulkan_mesh->getCullMode()) {
+        switch(_cull_mode) {
             case MeshCullMode::None: {
                 rasterizer_create_info.setCullMode(vk::CullModeFlagBits::eNone);
             } break;

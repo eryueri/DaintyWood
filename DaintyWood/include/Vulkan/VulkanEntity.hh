@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Vulkan/EntitySettings.hh"
+
 #include <vulkan/vulkan.hpp>
 
 namespace DWE {
