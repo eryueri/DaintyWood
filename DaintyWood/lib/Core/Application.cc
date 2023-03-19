@@ -21,6 +21,8 @@ namespace DWE {
         _logger->flushOn(LogLevel::trace);
 #endif
         _renderer = new Renderer{_window->getGLFWwindowPointer()};
+        _resource_manager = new ResourceManager{_renderer->getVulkanInstance()};
+        _renderer->setResourceManager(_resource_manager);
     }
 
     Application::~Application()

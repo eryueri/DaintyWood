@@ -3,16 +3,15 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "Vulkan/Utils.hh"
+#include "Vulkan/VulkanUtils.hh"
 
 #include "Vulkan/Macro.hh"
 namespace DWE {
     VulkanInstance::VulkanInstance(GLFWwindow* window) 
-        : 
-            _glfw_window(window),
-            _utils(this)
+        : _glfw_window(window), 
+        _util(std::make_unique<VulkanUtils>(this))
     {
-
+        
     }
 
     VulkanInstance::~VulkanInstance()
@@ -72,7 +71,7 @@ namespace DWE {
 
     void VulkanInstance::createLogicalDevice()
     {
-        _utils.findQueueFamilyIndices(_queue_indices);
+        _util->findQueueFamilyIndices(_queue_indices);
 
         float priority = 1.0f;
 
@@ -128,9 +127,9 @@ namespace DWE {
     void VulkanInstance::createSwapChain()
     {
         SwapchainSupports swapchain_supports{};
-        _utils.querySwapChainSupport(swapchain_supports);
+        _util->querySwapChainSupport(swapchain_supports);
         SwapchainDetails swapchain_details{};
-        _utils.setSwapchainDetails(swapchain_supports, swapchain_details);
+        _util->setSwapchainDetails(swapchain_supports, swapchain_details);
 
         uint32_t image_count = swapchain_supports.capabilities.minImageCount + 1;
         if (swapchain_supports.capabilities.maxImageCount > 0 
@@ -325,6 +324,42 @@ namespace DWE {
         return image_index;
     }
 
+    vk::CommandBuffer VulkanInstance::getSingleTimeCommandsBegin()
+    {
+        if (_single_time_command_buffer) 
+            _logical_device.resetCommandPool(_single_time_command_pool);
+
+        vk::CommandBufferAllocateInfo allocate_info{};
+        allocate_info
+            .setCommandPool(_single_time_command_pool)
+            .setLevel(vk::CommandBufferLevel::ePrimary)
+            .setCommandBufferCount(1);
+        _single_time_command_buffer = _logical_device.allocateCommandBuffers(allocate_info)[0];
+        CHECK_NULL(_single_time_command_buffer);
+
+        vk::CommandBufferBeginInfo begin_info{};
+        begin_info
+            .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit)
+            .setPInheritanceInfo(nullptr);
+
+        _single_time_command_buffer.begin(begin_info);
+
+        return _single_time_command_buffer;
+    }
+
+    void VulkanInstance::getSingleTimeCommandsEnd()
+    {
+        _single_time_command_buffer.end();
+
+        vk::SubmitInfo submit_info{};
+        submit_info
+            .setCommandBuffers(_single_time_command_buffer);
+        _queues[_graphics_queue_index.value()].submit(submit_info, nullptr);
+        _queues[_graphics_queue_index.value()].waitIdle();
+
+        _logical_device.freeCommandBuffers(_single_time_command_pool, _single_time_command_buffer);
+    }
+
     void VulkanInstance::getRenderCommandBufferBegin(uint32_t image_index)
     {
         _logical_device.resetCommandPool(_command_pools[image_index]);
@@ -402,11 +437,22 @@ namespace DWE {
     }
 
     GLFWwindow* VulkanInstance::getGLFWwindow() const { return _glfw_window; }
+    VulkanUtils* VulkanInstance::getUtil() const { return _util.get(); }
     vk::PhysicalDevice VulkanInstance::getGPU() const { return _gpu; }
     vk::Device VulkanInstance::getLogicalDevice() const { return _logical_device; }
     vk::SurfaceKHR VulkanInstance::getSurface() const { return _surface; }
     vk::RenderPass VulkanInstance::getRenderPass() const { return _render_pass; }
     vk::Extent2D VulkanInstance::getSwapchainExtent() const { return _swapchain_extent; }
+    uint32_t VulkanInstance::getMemoryType(uint32_t filter, vk::MemoryPropertyFlags prop) const
+    {
+        vk::PhysicalDeviceMemoryProperties properties = _gpu.getMemoryProperties();
+        for (uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
+            if ((filter & (i << i)) && ((properties.memoryTypes[i].propertyFlags & prop) == prop)) {
+                return i;
+            }
+        }
+        throw std::runtime_error("cannot get proper memory type...");
+    }
 
     void VulkanInstance::cleanInstance() { _instance.destroy(); }
     void VulkanInstance::cleanSurface() { _instance.destroySurfaceKHR(_surface); }

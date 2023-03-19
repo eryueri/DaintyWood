@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "pch.hh"
-#include "Vulkan/Utils.hh"
+#include "Vulkan/VulkanUtils.hh"
 
 struct GLFWwindow;
 
@@ -13,14 +13,18 @@ namespace DWE {
         ~VulkanInstance();
     public:
         GLFWwindow* getGLFWwindow() const;
+        VulkanUtils* getUtil() const;
         vk::PhysicalDevice getGPU() const;
         vk::Device getLogicalDevice() const;
         vk::SurfaceKHR getSurface() const;
         vk::RenderPass getRenderPass() const;
         vk::Extent2D getSwapchainExtent() const;
         vk::CommandBuffer getPrimaryCommandBuffer(uint32_t index) const;
+        uint32_t getMemoryType(uint32_t filter, vk::MemoryPropertyFlags prop) const;
     public:
         uint32_t waitAvailableFrameBuffer();
+        vk::CommandBuffer getSingleTimeCommandsBegin();
+        void getSingleTimeCommandsEnd();
         void getRenderCommandBufferBegin(uint32_t image_index);
         void getRenderCommandBufferend(uint32_t image_index);
         void submitCommands(uint32_t image_index);
@@ -73,6 +77,6 @@ namespace DWE {
         std::vector<vk::Queue> _queues;
         std::optional<uint32_t> _graphics_queue_index, _present_queue_index;
         QueueFamilyIndices _queue_indices;
-        VulkanUtils _utils;
+        std::unique_ptr<VulkanUtils> _util;
     };
 }

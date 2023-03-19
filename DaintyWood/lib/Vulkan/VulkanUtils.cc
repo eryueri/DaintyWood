@@ -1,4 +1,4 @@
-#include "Vulkan/Utils.hh"
+#include "Vulkan/VulkanUtils.hh"
 
 #include <GLFW/glfw3.h>
 
@@ -59,7 +59,7 @@ namespace DWE {
         details.present_mode = chooseSwapPresentMode(supports.present_modes);
     }
 
-    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats)
+    vk::SurfaceFormatKHR VulkanUtils::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats)
     {
         for (const auto& available_format : available_formats) {
             if (available_format.format == vk::Format::eB8G8R8A8Srgb && available_format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
@@ -70,7 +70,7 @@ namespace DWE {
         return available_formats[0];
     }
 
-    vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes)
+    vk::PresentModeKHR VulkanUtils::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes)
     {
         for (const auto& available_mode : available_modes) {
             if (available_mode == vk::PresentModeKHR::eMailbox){
@@ -80,7 +80,7 @@ namespace DWE {
         return vk::PresentModeKHR::eFifo;
     }
 
-    vk::Extent2D chooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities)
+    vk::Extent2D VulkanUtils::chooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities)
     {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;

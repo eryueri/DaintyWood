@@ -3,6 +3,7 @@
 #include "Core/Logger.hh"
 #include "Core/Window.hh"
 #include "Core/Renderer.hh"
+#include "Core/ResourceManager.hh"
 
 #include "pch.hh"
 
@@ -22,6 +23,7 @@ namespace DWE {
         EventCallbackFunc _on_event;
 
         Renderer* _renderer = nullptr;
+        ResourceManager* _resource_manager = nullptr;
 
 #ifdef DWE_DEBUG
     private:

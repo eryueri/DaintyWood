@@ -39,12 +39,12 @@ namespace DWE {
         void findQueueFamilyIndices(QueueFamilyIndices& indices);
         void querySwapChainSupport(SwapchainSupports& details);
         void setSwapchainDetails(const SwapchainSupports& supports, SwapchainDetails& details);
-
+    private:
+        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats);
+        vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes);
+        vk::Extent2D chooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities);
     private:
         const VulkanInstance* _instance;
     };
 
-    vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats);
-    vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes);
-    vk::Extent2D chooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities);
 }
