@@ -11,6 +11,8 @@ namespace DWE {
         VulkanShader(vk::Device device, ShaderSettings settings);
         ~VulkanShader();
 
+        ShaderType getShaderType();
+        uint8_t getVertexDataFlag();
         vk::PipelineShaderStageCreateInfo getStageInfo();
         std::vector<vk::VertexInputBindingDescription> getVertexBindingDescriptions();
         std::vector<vk::VertexInputAttributeDescription> getVertexAttributeDexcriptions();

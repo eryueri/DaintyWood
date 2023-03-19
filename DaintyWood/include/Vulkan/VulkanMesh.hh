@@ -20,10 +20,10 @@ namespace DWE {
     class VulkanMesh {
     public:
         VulkanMesh() = delete;
-        VulkanMesh(MeshSettings settings);
+        VulkanMesh(VulkanInstance* instance, MeshSettings settings);
         ~VulkanMesh();
     public:
-        void applyDrawingCommands(uint8_t vertex_data_flags);
+        void writeDrawingCommands(uint8_t vertex_data_flags, uint32_t image_index);
     private:
         void createVertexBuffer(VertexDataFlag flag);
         void createIndexBuffer();

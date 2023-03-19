@@ -7,10 +7,7 @@
 namespace DWE {
     class VulkanEntity {
     public:
-        VulkanEntity();
-        virtual ~VulkanEntity();
-
-        virtual void writeDrawingCommands() = 0;
+        virtual void writeDrawingCommands(uint32_t image_index) = 0;
     private:
         virtual void createPipelineLayout() = 0;
         virtual void createPipeline() = 0;

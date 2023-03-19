@@ -10,6 +10,8 @@ namespace DWE {
     public:
         VulkanTexture();
         ~VulkanTexture();
+
+        void writeDrawingCommands(uint32_t image_index);
     private:
         VulkanInstance* _instance;
     private:

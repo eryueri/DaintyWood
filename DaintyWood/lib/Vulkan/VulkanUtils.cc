@@ -23,21 +23,22 @@ namespace DWE {
 
 namespace DWE {
     VulkanUtils::VulkanUtils(VulkanInstance* instance) : _instance(instance) {}
-    void VulkanUtils::findQueueFamilyIndices(QueueFamilyIndices& indices)
+    vk::QueueFamilyProperties VulkanUtils::findQueueFamilyIndices(QueueFamilyIndices& indices)
     {
         vk::PhysicalDevice gpu = _instance->getGPU();
         std::vector<vk::QueueFamilyProperties> queue_props = gpu.getQueueFamilyProperties();
         uint32_t i = 0;
         for (vk::QueueFamilyProperties queue_prop : queue_props) {
-            if (queue_prop.queueFlags & vk::QueueFlagBits::eGraphics) {
-                indices.graphics_family = i;
-            }
             if (gpu.getSurfaceSupportKHR(i, _instance->getSurface())) {
                 indices.present_family = i;
             }
-            if (indices.isComplete()) {
-                break;
+            if (queue_prop.queueFlags & vk::QueueFlagBits::eGraphics) {
+                indices.graphics_family = i;
             }
+            if (indices.isComplete()) {
+                return queue_prop;
+            }
+            ++i;
         }
 
         throw std::runtime_error("failed to find proper queue family...");

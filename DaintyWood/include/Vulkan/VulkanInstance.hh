@@ -19,12 +19,12 @@ namespace DWE {
         vk::SurfaceKHR getSurface() const;
         vk::RenderPass getRenderPass() const;
         vk::Extent2D getSwapchainExtent() const;
-        vk::CommandBuffer getPrimaryCommandBuffer(uint32_t index) const;
         uint32_t getMemoryType(uint32_t filter, vk::MemoryPropertyFlags prop) const;
     public:
         uint32_t waitAvailableFrameBuffer();
         vk::CommandBuffer getSingleTimeCommandsBegin();
         void getSingleTimeCommandsEnd();
+        vk::CommandBuffer getRenderCommandBuffer(uint32_t image_index) const;
         void getRenderCommandBufferBegin(uint32_t image_index);
         void getRenderCommandBufferend(uint32_t image_index);
         void submitCommands(uint32_t image_index);

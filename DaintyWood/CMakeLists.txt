@@ -11,12 +11,19 @@ add_library(DWE
     ./lib/Core/Application.cc
     ./lib/Core/Logger.cc
     ./lib/Core/Window.cc
+    ./lib/Core/Renderer.cc
+    ./lib/Core/ResourceManager.cc
     ./lib/Events/Event.cc
     ./lib/Events/KeyEvents.cc
     ./lib/Events/MouseEvents.cc
     ./lib/Events/WindowEvents.cc
-    ./lib/Vulkan/Utils.cc
+    ./lib/Vulkan/ShaderSettings.cc
     ./lib/Vulkan/VulkanInstance.cc
+    ./lib/Vulkan/VulkanMesh.cc
+    ./lib/Vulkan/VulkanRenderEntity.cc
+    ./lib/Vulkan/VulkanShader.cc
+    ./lib/Vulkan/VulkanTexture.cc
+    ./lib/Vulkan/VulkanUtils.cc
 )
 target_include_directories(DWE
     PRIVATE

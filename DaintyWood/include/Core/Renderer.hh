@@ -13,7 +13,7 @@ namespace DWE {
         Renderer(GLFWwindow* window);
         VulkanInstance* getVulkanInstance() const;
         void setResourceManager(ResourceManager* resource_manager);
-        void loadEntity(); // this is temporary, entities will be managed in another way
+        void prepareEntities();
         void renderFrame();
     private:
         std::unique_ptr<VulkanInstance> _vulkan_instance;

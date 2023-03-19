@@ -14,8 +14,6 @@ namespace DWE {
         ~Application();
         void run();
 
-        void loadEntity(std::string filename); // this is definately temporary, i'll make a resource manager
-
         void onEvent(Event& e);
     private:
         bool _running = false;

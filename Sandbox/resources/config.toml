@@ -1,13 +1,13 @@
 [[Entities]]
     entityType = "RenderEntity"
     meshNames = ["TriangleMesh"]
-    cullMode = "BackFace"
+    cullMode = "FrontFace"
     textureNames = []
     shaderNames = ["EntityVertexShader", "EntityFragmentShader"]
 
 [[Meshes]]
     name = "TriangleMesh"
-    fileName = "meshes/triangle.obj"
+    filePath = "meshes/triangle.obj"
 
 [[Shaders]]
     name = "EntityVertexShader"
@@ -15,11 +15,11 @@
     shaderType = "VertexShader"
     entryPoint = "main"
     vertexInfo = { vertexDataFlags = ["Position", "Color", "TexCoord"] }
-    uniformInfo = { uniformFlags = ["ModelMatrix", "ViewMatrix", "ProjectionMatrix"] }
+    uniformInfo = { uniformFlags = [] }
 
 [[Shaders]]
     name = "EntityFragmentShader"
     fileName = "../glslShaders/entity.frag.spv"
     shaderType = "FragmentShader"
     entryPoint = "main"
-    samplerNameList = ["texSampler"]
+    samplerNameList = [""]

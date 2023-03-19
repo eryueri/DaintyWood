@@ -49,11 +49,11 @@ namespace DWE {
         _shader_type = shader_type_map.at(settings.shader_type.value());
 
         for (const std::optional<std::string>& vertex_flag : settings.vertex_data_flags) {
-            _vertex_data_flags |= vertex_flag_map.at(vertex_flag.value());
+            _vertex_data_flags = _vertex_data_flags | vertex_flag_map.at(vertex_flag.value());
         }
 
         for (const std::optional<std::string>& unifom_flag : settings.uniform_data_flags) {
-            _uniform_data_flags |= uniform_flag_map.at(unifom_flag.value());
+            _uniform_data_flags = _uniform_data_flags | uniform_flag_map.at(unifom_flag.value());
         }
 
         for (const std::optional<std::string>& sampler_name : settings.sampler_name_list) {
@@ -89,6 +89,16 @@ namespace DWE {
     void VulkanShader::cleanShaderModule()
     {
         _device.destroy(_shader_bin);
+    }
+
+    ShaderType VulkanShader::getShaderType()
+    {
+        return _shader_type;
+    }
+
+    uint8_t VulkanShader::getVertexDataFlag()
+    {
+        return _vertex_data_flags;
     }
 
     vk::PipelineShaderStageCreateInfo VulkanShader::getStageInfo()

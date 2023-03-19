@@ -8,8 +8,9 @@
 
 #include "Vulkan/Macro.hh"
 namespace DWE {
-    VulkanMesh::VulkanMesh(MeshSettings settings) 
-        : _mesh_name(settings.mesh_name.value())
+    VulkanMesh::VulkanMesh(VulkanInstance* instance, MeshSettings settings) 
+        : _instance(instance), 
+        _mesh_name(settings.mesh_name.value())
     {
         Assimp::Importer importer{};
         const aiScene* scene = importer.ReadFile(
@@ -18,6 +19,8 @@ namespace DWE {
                 aiProcess_FlipUVs);
 
         processNode(scene->mRootNode, scene);
+
+        createGeometryBuffers();
     }
 
     void VulkanMesh::processNode(aiNode* node, const aiScene* scene) 
@@ -57,9 +60,9 @@ namespace DWE {
         // maybe in the near future we'll use material, but not today
     }
 
-    void VulkanMesh::applyDrawingCommands(uint8_t vertex_data_flags)
+    void VulkanMesh::writeDrawingCommands(uint8_t vertex_data_flags, uint32_t image_index)
     {
-        vk::CommandBuffer command_buffer = _instance->getPrimaryCommandBuffer(0);
+        vk::CommandBuffer command_buffer = _instance->getRenderCommandBuffer(image_index);
 
         auto buffers = getVertexDataBuffers(vertex_data_flags);
         std::vector<vk::DeviceSize> offsets{buffers.size(), 0};

@@ -11,10 +11,10 @@ namespace DWE {
     class VulkanRenderEntity : public VulkanEntity {
     public:
         VulkanRenderEntity() = delete;
-        VulkanRenderEntity(EntitySettings settings);
+        VulkanRenderEntity(VulkanInstance* instance, EntitySettings settings);
         ~VulkanRenderEntity();
         void updateDescriptorSets();
-        void writeDrawingCommands() override;
+        void writeDrawingCommands(uint32_t image_index) override;
     public:
         void addTexture(VulkanTexture* texture);
         void addMesh(VulkanMesh* mesh);
@@ -22,18 +22,20 @@ namespace DWE {
         void initialize();
     private:
         void createPipelineLayout() override;
-        void cleanPipelineLayout();
 
         void createPipeline() override;
-        void cleanPipeline();
         void resetPipeline();
 
         void createDescriptorPool() override;
-        void cleanDescriptorPool();
         void createDescriptorSets() override;
-        void cleanDescriptorSets();
 
         void updateDescriptorSet() override;
+
+    private:
+        void cleanPipelineLayout();
+        void cleanPipeline();
+        void cleanDescriptorPool();
+        void cleanDescriptorSets();
 
     private:
         VulkanInstance* _vulkan_instance = nullptr;
@@ -42,6 +44,7 @@ namespace DWE {
     private:
         EntityType _type;
         MeshCullMode _cull_mode;
+        uint8_t _vertex_data_flags = 0;
         std::vector<VulkanTexture*> _vulkan_textures;
         std::vector<VulkanMesh*> _vulkan_meshes;
         std::vector<VulkanShader*> _vulkan_shaders;

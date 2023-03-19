@@ -11,7 +11,17 @@ namespace DWE {
         : _glfw_window(window), 
         _util(std::make_unique<VulkanUtils>(this))
     {
-        
+        createInstance();
+        createSurface();
+        pickGPU();
+        createLogicalDevice();
+        createSwapChain();
+        createImageViews();
+        createRenderPass();
+        createCommandPools();
+        createPrimaryCommandBuffers();
+        createFramebuffers();
+        createSyncObjects();
     }
 
     VulkanInstance::~VulkanInstance()
@@ -54,7 +64,7 @@ namespace DWE {
     {
         VkSurfaceKHR temp_surface;
         VkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(_instance), _glfw_window, nullptr, &temp_surface);
-        if (result == VK_FALSE) 
+        if (result != VK_SUCCESS) 
         {
             throw std::runtime_error("failed to create glfw window surface...");
         }
@@ -71,11 +81,13 @@ namespace DWE {
 
     void VulkanInstance::createLogicalDevice()
     {
-        _util->findQueueFamilyIndices(_queue_indices);
+        vk::QueueFamilyProperties queue_properties = _util->findQueueFamilyIndices(_queue_indices);
 
         float priority = 1.0f;
 
         std::vector<vk::DeviceQueueCreateInfo> queue_create_infos{};
+
+        uint32_t queue_count = 1;
 
         if (_queue_indices.isDiscrete()) {
             vk::DeviceQueueCreateInfo queue_create_info[2]{};
@@ -86,13 +98,16 @@ namespace DWE {
                                 .setQueueCount(1)
                                 .setPQueuePriorities(&priority);
 
-            queue_create_infos.resize(2);
-            memcpy(queue_create_infos.data(), queue_create_info, 2*sizeof(vk::DeviceQueueCreateInfo));
+            queue_create_infos.push_back(queue_create_info[0]);
+            queue_create_infos.push_back(queue_create_info[1]);
         } else {
             vk::DeviceQueueCreateInfo queue_create_info{};
+            if (queue_properties.queueCount >= 2) {
+                queue_count = 2;
+            }
 
             queue_create_info.setQueueFamilyIndex(_queue_indices.graphics_family.value())
-                             .setQueueCount(2)
+                             .setQueueCount(queue_count)
                              .setPQueuePriorities(&priority);
 
             queue_create_infos.push_back(queue_create_info);
@@ -116,7 +131,10 @@ namespace DWE {
             _queues.push_back(_logical_device.getQueue(_queue_indices.present_family.value(), 0));
         } else {
             _queues.push_back(_logical_device.getQueue(_queue_indices.graphics_family.value(), 0));
-            _queues.push_back(_logical_device.getQueue(_queue_indices.graphics_family.value(), 1));
+            if (queue_count == 2)
+                _queues.push_back(_logical_device.getQueue(_queue_indices.graphics_family.value(), 1));
+            else 
+                _queues.push_back(_logical_device.getQueue(_queue_indices.graphics_family.value(), 0));
         }
         _graphics_queue_index = 0;
         _present_queue_index = 1;
@@ -313,22 +331,8 @@ namespace DWE {
         }
     }
 
-    uint32_t VulkanInstance::waitAvailableFrameBuffer()
-    {
-        uint32_t image_index{};
-        vk::Result result = _logical_device.acquireNextImageKHR(_swapchain, std::numeric_limits<uint64_t>::max(), _image_available_semaphores[_current_frame], _inflight_fences[_current_frame], &image_index);
-        result = _logical_device.waitForFences(1, &_inflight_fences[_current_frame], true, std::numeric_limits<uint64_t>::max());
-
-        result = _logical_device.resetFences(1, &_inflight_fences[_current_frame]);
-
-        return image_index;
-    }
-
     vk::CommandBuffer VulkanInstance::getSingleTimeCommandsBegin()
     {
-        if (_single_time_command_buffer) 
-            _logical_device.resetCommandPool(_single_time_command_pool);
-
         vk::CommandBufferAllocateInfo allocate_info{};
         allocate_info
             .setCommandPool(_single_time_command_pool)
@@ -358,16 +362,35 @@ namespace DWE {
         _queues[_graphics_queue_index.value()].waitIdle();
 
         _logical_device.freeCommandBuffers(_single_time_command_pool, _single_time_command_buffer);
+        _single_time_command_buffer = nullptr;
+    }
+
+    uint32_t VulkanInstance::waitAvailableFrameBuffer()
+    {
+        vk::Result result = _logical_device.acquireNextImageKHR(_swapchain, std::numeric_limits<uint64_t>::max(), _image_available_semaphores[_current_frame], _inflight_fences[_current_frame], &_current_image);
+        result = _logical_device.waitForFences(1, &_inflight_fences[_current_frame], true, std::numeric_limits<uint64_t>::max());
+
+        result = _logical_device.resetFences(1, &_inflight_fences[_current_frame]);
+
+        return _current_image;
+    }
+
+    vk::CommandBuffer VulkanInstance::getRenderCommandBuffer(uint32_t image_index) const
+    {
+        return _primary_command_buffers[image_index];
     }
 
     void VulkanInstance::getRenderCommandBufferBegin(uint32_t image_index)
     {
         _logical_device.resetCommandPool(_command_pools[image_index]);
+
+        vk::CommandBuffer buffer = _primary_command_buffers[image_index];
+
         vk::CommandBufferBeginInfo begin_info{};
         begin_info
             .setFlags(vk::CommandBufferUsageFlags(0))
             .setPInheritanceInfo(nullptr);
-        _primary_command_buffers[image_index].begin(begin_info);
+        buffer.begin(begin_info);
 
         vk::Viewport viewport{
             0.0f, 0.0f, // x, y
@@ -386,8 +409,6 @@ namespace DWE {
             .setFramebuffer(_framebuffers[image_index])
             .setRenderArea(scissor)
             .setClearValues(_clear_color);
-
-        vk::CommandBuffer buffer = _primary_command_buffers[image_index];
 
         buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
         buffer.setViewport(0, 1, &viewport);
@@ -427,13 +448,16 @@ namespace DWE {
             .setWaitSemaphoreCount(1)
             .setPWaitSemaphores(&_render_finished_semaphores[_current_frame])
             .setSwapchainCount(1)
-            .setPSwapchains(&_swapchain);
+            .setPSwapchains(&_swapchain)
+            .setImageIndices(_current_image);
 
         vk::Result result = _queues[_present_queue_index.value()].presentKHR(present_info);
 
         if (result != vk::Result::eSuccess) {
             throw std::runtime_error("failed to present image to swapchain...");
         }
+
+        _current_frame = (_current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     GLFWwindow* VulkanInstance::getGLFWwindow() const { return _glfw_window; }

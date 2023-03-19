@@ -14,6 +14,8 @@ namespace DWE {
         if (_instance == nullptr) 
         {
             glfwInit();
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         }
 
         _glfw_window = glfwCreateWindow(props.width, props.height, props.title.c_str(), nullptr, nullptr);

@@ -36,7 +36,7 @@ namespace DWE {
         VulkanUtils() = delete;
         VulkanUtils(VulkanInstance* instance);
 
-        void findQueueFamilyIndices(QueueFamilyIndices& indices);
+        vk::QueueFamilyProperties findQueueFamilyIndices(QueueFamilyIndices& indices);
         void querySwapChainSupport(SwapchainSupports& details);
         void setSwapchainDetails(const SwapchainSupports& supports, SwapchainDetails& details);
     private:

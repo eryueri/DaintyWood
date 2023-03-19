@@ -4,7 +4,8 @@
 
 #include "Vulkan/Macro.hh"
 namespace DWE {
-    VulkanRenderEntity::VulkanRenderEntity(EntitySettings settings)
+    VulkanRenderEntity::VulkanRenderEntity(VulkanInstance* instance, EntitySettings settings)
+        : _vulkan_instance(instance)
     {
         static std::map<std::string, EntityType> entity_type_map{
             {"RenderEntity", EntityType::RenderEntity}, 
@@ -21,15 +22,80 @@ namespace DWE {
         _cull_mode = cull_mode_map.at(settings.cull_mode.value());
     }
 
-    void VulkanRenderEntity::writeDrawingCommands()
+    VulkanRenderEntity::~VulkanRenderEntity()
     {
-        if (!_vulkan_textures.empty()) {
 
+    }
+
+    void VulkanRenderEntity::addTexture(VulkanTexture *texture)
+    {
+        _vulkan_textures.push_back(texture);
+    }
+
+    void VulkanRenderEntity::addMesh(VulkanMesh *mesh)
+    {
+        _vulkan_meshes.push_back(mesh);
+    }
+
+    void VulkanRenderEntity::addShader(VulkanShader *shader)
+    {
+        _vulkan_shaders.push_back(shader);
+    }
+
+    void VulkanRenderEntity::initialize()
+    {
+        for (VulkanShader* shader : _vulkan_shaders) {
+            if (shader->getShaderType() == ShaderType::Vertex) {
+                _vertex_data_flags = shader->getVertexDataFlag();
+            }
+        }
+
+        createPipelineLayout();
+        createPipeline();
+    }
+
+    void VulkanRenderEntity::writeDrawingCommands(uint32_t image_index)
+    {
+        vk::CommandBuffer command_buffer = _vulkan_instance->getRenderCommandBuffer(image_index);
+        command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _graphics_pipeline);
+        if (!_vulkan_textures.empty()) {
+            for (VulkanTexture* texture : _vulkan_textures) {
+                std::cerr << "drawing texture\n";
+                texture->writeDrawingCommands(image_index);
+            }
         }
 
         if (!_vulkan_meshes.empty()) {
-
+            for (VulkanMesh* mesh : _vulkan_meshes) {
+                std::cerr << "drawing mesh\n";
+                mesh->writeDrawingCommands(_vertex_data_flags, image_index);
+            }
+            std::cerr << "\n";
         }
+    }
+
+    void VulkanRenderEntity::createPipelineLayout()
+    {
+        std::vector<vk::DescriptorSetLayout> descriptor_set_layout{};
+        if (!_vertex_shader) {
+            vk::DescriptorSetLayout vertex_descriptor_set_layout = _vertex_shader->getDescriptorSetLayout();
+            CHECK_NULL(vertex_descriptor_set_layout);
+            descriptor_set_layout.push_back(vertex_descriptor_set_layout);
+        }
+        if (!_frag_shader) {
+            vk::DescriptorSetLayout fragment_descriptor_set_layout = _frag_shader->getDescriptorSetLayout();
+            CHECK_NULL(fragment_descriptor_set_layout);
+            descriptor_set_layout.push_back(fragment_descriptor_set_layout);
+        }
+
+        vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
+        pipeline_layout_create_info
+            .setSetLayouts(descriptor_set_layout)
+            .setPushConstantRangeCount(0)
+            .setPPushConstantRanges(nullptr);
+
+        _pipeline_layout = _vulkan_instance->getLogicalDevice().createPipelineLayout(pipeline_layout_create_info);
+        CHECK_NULL(_pipeline_layout);
     }
 
     void VulkanRenderEntity::createPipeline()
@@ -155,28 +221,24 @@ namespace DWE {
         _frag_shader->cleanShaderModule();
     }
 
-    void VulkanRenderEntity::createPipelineLayout()
+    void VulkanRenderEntity::createDescriptorPool()
     {
-        std::vector<vk::DescriptorSetLayout> descriptor_set_layout{};
-        if (!_vertex_shader) {
-            vk::DescriptorSetLayout vertex_descriptor_set_layout = _vertex_shader->getDescriptorSetLayout();
-            CHECK_NULL(vertex_descriptor_set_layout);
-            descriptor_set_layout.push_back(vertex_descriptor_set_layout);
-        }
-        if (!_frag_shader) {
-            vk::DescriptorSetLayout fragment_descriptor_set_layout = _frag_shader->getDescriptorSetLayout();
-            CHECK_NULL(fragment_descriptor_set_layout);
-            descriptor_set_layout.push_back(fragment_descriptor_set_layout);
-        }
 
-        vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
-        pipeline_layout_create_info
-            .setSetLayouts(descriptor_set_layout)
-            .setPushConstantRangeCount(0)
-            .setPPushConstantRanges(nullptr);
+    }
 
-        _pipeline_layout = _vulkan_instance->getLogicalDevice().createPipelineLayout(pipeline_layout_create_info);
-        CHECK_NULL(_pipeline_layout);
+    void VulkanRenderEntity::createDescriptorSets()
+    {
+
+    }
+
+    void VulkanRenderEntity::updateDescriptorSets()
+    {
+
+    }
+
+    void VulkanRenderEntity::updateDescriptorSet()
+    {
+
     }
 }
 #include "Vulkan/UnMacro.hh"

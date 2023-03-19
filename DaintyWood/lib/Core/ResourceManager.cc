@@ -27,6 +27,11 @@ namespace DWE {
 
     }
 
+    std::vector<VulkanEntity*> ResourceManager::getRenderEntities() const
+    {
+        return _render_entities;
+    }
+
     void ResourceManager::loadFile(std::string file) {
         toml::table config = toml::parse_file(_source_root_dir + file);
 
@@ -84,7 +89,7 @@ namespace DWE {
         settings.file_path = mesh["filePath"].value<std::string>();
         settings.cull_mode = mesh["cullMode"].value<std::string>();
 
-        VulkanMesh* newMesh = new VulkanMesh(settings);
+        VulkanMesh* newMesh = new VulkanMesh(_vulkan_instance, settings);
         if (_mesh_map.count(settings.mesh_name.value())) {
             throw std::runtime_error("mesh already existed: " + settings.mesh_name.value() + "\nuse another name if do want this mesh loaded");
         }
@@ -99,17 +104,24 @@ namespace DWE {
         settings.compiled_file_path = shader["fileName"].value<std::string>();
         settings.shader_type = shader["shaderType"].value<std::string>();
         settings.entry_point = shader["entryPoint"].value<std::string>();
-        toml::array vertex_flags = *shader["vertexInfo"]["vertexDataFlags"].as_array();
-        for (const toml::node& flags : vertex_flags) {
-            settings.vertex_data_flags.push_back(flags.value<std::string>());
+
+        if (shader["vertexInfo"]["vertexDataFlags"].is_array()) {
+            toml::array vertex_flags = *shader["vertexInfo"]["vertexDataFlags"].as_array();
+            for (const toml::node& flags : vertex_flags) {
+                settings.vertex_data_flags.push_back(flags.value<std::string>());
+            }
         }
-        toml::array uniform_flags = *shader["uniformInfo"]["uniformFlags"].as_array();
-        for (const toml::node& flags : uniform_flags) {
-            settings.uniform_data_flags.push_back(flags.value<std::string>());
+        if (shader["uniformInfo"]["uniformFlags"].is_array()) {
+            toml::array uniform_flags = *shader["uniformInfo"]["uniformFlags"].as_array();
+            for (const toml::node& flags : uniform_flags) {
+                settings.uniform_data_flags.push_back(flags.value<std::string>());
+            }
         }
-        toml::array sampler_list = *shader["samplerNameList"].as_array();
-        for (const toml::node& sampler : sampler_list) {
-            settings.sampler_name_list.push_back(sampler.value<std::string>());
+        if (shader["samplernamelist"].is_array()) {
+            toml::array sampler_list = *shader["samplernamelist"].as_array();
+            for (const toml::node& sampler : sampler_list) {
+                settings.sampler_name_list.push_back(sampler.value<std::string>());
+            }
         }
 
         VulkanShader* newShader = new VulkanShader(_vulkan_instance->getLogicalDevice(), settings);
@@ -125,17 +137,23 @@ namespace DWE {
         settings.entity_type = entity["entityType"].value<std::string>();
         settings.cull_mode = entity["cullMode"].value<std::string>();
         EntityResourceData resource_data{};
-        toml::array mesh_names = *entity["meshNames"].as_array();
-        for (const toml::node& mesh_name : mesh_names) {
-            resource_data.mesh_names.push_back(mesh_name.value<std::string>());
+        if (entity["meshNames"].is_array()) {
+            toml::array mesh_names = *entity["meshNames"].as_array();
+            for (const toml::node& mesh_name : mesh_names) {
+                resource_data.mesh_names.push_back(mesh_name.value<std::string>());
+            }
         }
-        toml::array texture_names = *entity["textureNames"].as_array();
-        for (const toml::node& texture_name : texture_names) {
-            resource_data.texture_names.push_back(texture_name.value<std::string>());
+        if (entity["textureNames"].is_array()) {
+            toml::array texture_names = *entity["textureNames"].as_array();
+            for (const toml::node& texture_name : texture_names) {
+                resource_data.texture_names.push_back(texture_name.value<std::string>());
+            }
         }
-        toml::array shader_names = *entity["shaderNames"].as_array();
-        for (const toml::node& shader_name : shader_names) {
-            resource_data.shader_names.push_back(shader_name.value<std::string>());
+        if (entity["shaderNames"].is_array()) {
+            toml::array shader_names = *entity["shaderNames"].as_array();
+            for (const toml::node& shader_name : shader_names) {
+                resource_data.shader_names.push_back(shader_name.value<std::string>());
+            }
         }
 
         // ComputeEntity is future work, i'll not implement it for now
@@ -150,7 +168,7 @@ namespace DWE {
         //     throw std::runtime_error("unknown entity type: " + settings.entity_type.value());
         // }
 
-        VulkanRenderEntity* newEntity = new VulkanRenderEntity(settings);
+        VulkanRenderEntity* newEntity = new VulkanRenderEntity(_vulkan_instance, settings);
         for (const std::optional<std::string>& mesh_name : resource_data.mesh_names) {
             if (mesh_name.has_value()) {
                 newEntity->addMesh(_mesh_map.at(mesh_name.value()));
