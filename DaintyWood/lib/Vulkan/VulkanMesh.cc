@@ -64,14 +64,14 @@ namespace DWE {
 
     void VulkanMesh::writeDrawingCommands(uint8_t vertex_data_flags, uint32_t image_index)
     {
-        // vk::CommandBuffer command_buffer = _instance->getRenderCommandBuffer(image_index);
-        //
-        // auto buffers = getVertexDataBuffers(vertex_data_flags);
-        // std::vector<vk::DeviceSize> offsets(buffers.size(), 0);
-        //
-        // command_buffer.bindVertexBuffers(0, buffers.size(), buffers.data(), offsets.data());
-        // command_buffer.bindIndexBuffer(_index_buffer, 0, vk::IndexType::eUint32);
-        // command_buffer.drawIndexed(static_cast<uint32_t>(_vertex_indexs.size()), 1, 0, 0, 0);
+        vk::CommandBuffer command_buffer = _instance->getRenderCommandBuffer(image_index);
+
+        auto buffers = getVertexDataBuffers(vertex_data_flags);
+        std::vector<vk::DeviceSize> offsets(buffers.size(), 0);
+
+        command_buffer.bindVertexBuffers(0, buffers.size(), buffers.data(), offsets.data());
+        command_buffer.bindIndexBuffer(_index_buffer, 0, vk::IndexType::eUint32);
+        command_buffer.drawIndexed(static_cast<uint32_t>(_vertex_indexs.size()), 1, 0, 0, 0);
     }
 
     std::vector<vk::Buffer> VulkanMesh::getVertexDataBuffers(uint8_t vertex_data_flags)
@@ -171,6 +171,8 @@ namespace DWE {
         memcpy(data, src_data, size);
         device.unmapMemory(staging_memory);
 
+        copyBuffer(staging_buffer, buffer, size);
+
         device.freeMemory(staging_memory);
         device.destroyBuffer(staging_buffer);
 
@@ -202,6 +204,8 @@ namespace DWE {
         void* data = device.mapMemory(staging_memory, 0, size, vk::MemoryMapFlags(0));
         memcpy(data, src_data, size);
         device.unmapMemory(staging_memory);
+
+        copyBuffer(staging_buffer, _index_buffer, size);
 
         device.freeMemory(staging_memory);
         device.destroyBuffer(staging_buffer);

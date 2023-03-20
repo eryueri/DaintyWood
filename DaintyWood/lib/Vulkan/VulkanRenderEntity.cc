@@ -73,7 +73,6 @@ namespace DWE {
                 mesh->writeDrawingCommands(_vertex_data_flags, image_index);
             }
         }
-        command_buffer.draw(3, 1, 0, 0);
     }
 
     void VulkanRenderEntity::createPipelineLayout()
