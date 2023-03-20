@@ -47,6 +47,10 @@ namespace DWE {
         for (VulkanShader* shader : _vulkan_shaders) {
             if (shader->getShaderType() == ShaderType::Vertex) {
                 _vertex_data_flags = shader->getVertexDataFlag();
+                _vertex_shader = shader;
+            }
+            if (shader->getShaderType() == ShaderType::Fragment) {
+                _frag_shader = shader;
             }
         }
 
@@ -60,37 +64,35 @@ namespace DWE {
         command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _graphics_pipeline);
         if (!_vulkan_textures.empty()) {
             for (VulkanTexture* texture : _vulkan_textures) {
-                std::cerr << "drawing texture\n";
                 texture->writeDrawingCommands(image_index);
             }
         }
 
         if (!_vulkan_meshes.empty()) {
             for (VulkanMesh* mesh : _vulkan_meshes) {
-                std::cerr << "drawing mesh\n";
                 mesh->writeDrawingCommands(_vertex_data_flags, image_index);
             }
-            std::cerr << "\n";
         }
+        command_buffer.draw(3, 1, 0, 0);
     }
 
     void VulkanRenderEntity::createPipelineLayout()
     {
         std::vector<vk::DescriptorSetLayout> descriptor_set_layout{};
-        if (!_vertex_shader) {
-            vk::DescriptorSetLayout vertex_descriptor_set_layout = _vertex_shader->getDescriptorSetLayout();
-            CHECK_NULL(vertex_descriptor_set_layout);
-            descriptor_set_layout.push_back(vertex_descriptor_set_layout);
+        if (!_vertex_shader || !_frag_shader) {
+            throw std::runtime_error("shader needed not all initialized...");
         }
-        if (!_frag_shader) {
-            vk::DescriptorSetLayout fragment_descriptor_set_layout = _frag_shader->getDescriptorSetLayout();
-            CHECK_NULL(fragment_descriptor_set_layout);
-            descriptor_set_layout.push_back(fragment_descriptor_set_layout);
-        }
+        vk::DescriptorSetLayout vertex_descriptor_set_layout = _vertex_shader->getDescriptorSetLayout();
+        // CHECK_NULL(vertex_descriptor_set_layout);
+        descriptor_set_layout.push_back(vertex_descriptor_set_layout);
+        vk::DescriptorSetLayout fragment_descriptor_set_layout = _frag_shader->getDescriptorSetLayout();
+        // CHECK_NULL(fragment_descriptor_set_layout);
+        descriptor_set_layout.push_back(fragment_descriptor_set_layout);
 
         vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
         pipeline_layout_create_info
-            .setSetLayouts(descriptor_set_layout)
+            .setSetLayoutCount(0)
+            .setPSetLayouts(nullptr)
             .setPushConstantRangeCount(0)
             .setPPushConstantRanges(nullptr);
 
@@ -114,7 +116,7 @@ namespace DWE {
         vk::PipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
         input_assembly_create_info
             .setTopology(vk::PrimitiveTopology::eTriangleList)
-            .setPrimitiveRestartEnable(true);
+            .setPrimitiveRestartEnable(false);
 
         vk::Extent2D swapchain_extent = _vulkan_instance->getSwapchainExtent();
 
@@ -148,7 +150,7 @@ namespace DWE {
             .setRasterizerDiscardEnable(false)
             .setPolygonMode(vk::PolygonMode::eFill)
             .setLineWidth(1.0f)
-            .setFrontFace(vk::FrontFace::eCounterClockwise)
+            .setFrontFace(vk::FrontFace::eClockwise)
             .setDepthBiasEnable(false);
         switch(_cull_mode) {
             case MeshCullMode::None: {

@@ -51,6 +51,10 @@ namespace DWE {
             {
                 _running = false;
             } break;
+            case EventType::KeyPress:
+            {
+                _running = false; // temporary for fast debug
+            }
             default: break;
         }
 

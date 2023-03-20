@@ -367,7 +367,7 @@ namespace DWE {
 
     uint32_t VulkanInstance::waitAvailableFrameBuffer()
     {
-        vk::Result result = _logical_device.acquireNextImageKHR(_swapchain, std::numeric_limits<uint64_t>::max(), _image_available_semaphores[_current_frame], _inflight_fences[_current_frame], &_current_image);
+        vk::Result result = _logical_device.acquireNextImageKHR(_swapchain, std::numeric_limits<uint64_t>::max(), _image_available_semaphores[_current_frame], nullptr, &_current_image);
         result = _logical_device.waitForFences(1, &_inflight_fences[_current_frame], true, std::numeric_limits<uint64_t>::max());
 
         result = _logical_device.resetFences(1, &_inflight_fences[_current_frame]);

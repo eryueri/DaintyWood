@@ -18,6 +18,8 @@ namespace DWE {
                 aiProcess_Triangulate | 
                 aiProcess_FlipUVs);
 
+        CHECK_NULL(scene);
+
         processNode(scene->mRootNode, scene);
 
         createGeometryBuffers();
@@ -62,14 +64,14 @@ namespace DWE {
 
     void VulkanMesh::writeDrawingCommands(uint8_t vertex_data_flags, uint32_t image_index)
     {
-        vk::CommandBuffer command_buffer = _instance->getRenderCommandBuffer(image_index);
-
-        auto buffers = getVertexDataBuffers(vertex_data_flags);
-        std::vector<vk::DeviceSize> offsets{buffers.size(), 0};
-
-        command_buffer.bindVertexBuffers(0, buffers.size(), buffers.data(), offsets.data());
-        command_buffer.bindIndexBuffer(_index_buffer, 0, vk::IndexType::eUint32);
-        command_buffer.drawIndexed(static_cast<uint32_t>(_vertex_indexs.size()), 1, 0, 0, 0);
+        // vk::CommandBuffer command_buffer = _instance->getRenderCommandBuffer(image_index);
+        //
+        // auto buffers = getVertexDataBuffers(vertex_data_flags);
+        // std::vector<vk::DeviceSize> offsets(buffers.size(), 0);
+        //
+        // command_buffer.bindVertexBuffers(0, buffers.size(), buffers.data(), offsets.data());
+        // command_buffer.bindIndexBuffer(_index_buffer, 0, vk::IndexType::eUint32);
+        // command_buffer.drawIndexed(static_cast<uint32_t>(_vertex_indexs.size()), 1, 0, 0, 0);
     }
 
     std::vector<vk::Buffer> VulkanMesh::getVertexDataBuffers(uint8_t vertex_data_flags)
@@ -227,7 +229,7 @@ namespace DWE {
 
         vk::MemoryAllocateInfo memory_allocate_info{}; // TODO: memory allocation is limited under 4096, implement a better memory allocation stratage in the far future
         memory_allocate_info
-            .setAllocationSize(size)
+            .setAllocationSize(memory_requirements.size)
             .setMemoryTypeIndex(_instance->getMemoryType(memory_requirements.memoryTypeBits, property));
 
         memory = device.allocateMemory(memory_allocate_info);

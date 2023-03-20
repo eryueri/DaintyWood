@@ -163,7 +163,7 @@ namespace DWE {
             vk::VertexInputBindingDescription texcoord_binding{};
             texcoord_binding
                 .setBinding(binding)
-                .setStride(vertexDataStride(VertexDataFlag::Color))
+                .setStride(vertexDataStride(VertexDataFlag::Texcoord))
                 .setInputRate(vk::VertexInputRate::eVertex);
             binding_descriptions.push_back(texcoord_binding);
             ++binding;
@@ -173,7 +173,7 @@ namespace DWE {
             vk::VertexInputBindingDescription normal_binding{};
             normal_binding
                 .setBinding(binding)
-                .setStride(vertexDataStride(VertexDataFlag::Color))
+                .setStride(vertexDataStride(VertexDataFlag::Normal))
                 .setInputRate(vk::VertexInputRate::eVertex);
             binding_descriptions.push_back(normal_binding);
             ++binding;
@@ -209,7 +209,7 @@ namespace DWE {
             color_attribute
                 .setBinding(binding)
                 .setLocation(location)
-                .setFormat(vk::Format::eR32G32B32Sfloat)
+                .setFormat(vk::Format::eR32G32B32A32Sfloat)
                 .setOffset(0);
             attribute_descriptions.push_back(color_attribute);
             ++binding; ++location;
