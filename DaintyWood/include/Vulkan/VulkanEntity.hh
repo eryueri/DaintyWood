@@ -13,6 +13,7 @@ namespace DWE {
         virtual void createPipeline() = 0;
         virtual void createDescriptorPool() = 0;
         virtual void createDescriptorSets() = 0;
+        virtual void updateDescriptorSets() = 0;
         virtual void updateDescriptorSet() = 0;
     };
 }

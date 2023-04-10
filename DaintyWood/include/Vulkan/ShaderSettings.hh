@@ -11,17 +11,19 @@ namespace  DWE {
 
     enum class VertexDataFlag : uint8_t {
         None = 0,
-        Position = BIT(1), 
-        Color = BIT(2), 
-        Texcoord = BIT(3),
-        Normal = BIT(4),
+        Position = BIT(0), 
+        Color = BIT(1), 
+        Texcoord = BIT(2),
+        Normal = BIT(3),
     };
 
     enum class UniformFlag : uint8_t {
         None = 0,
-        ModelMatrix = BIT(1), 
-        ViewMatrix = BIT(2), 
-        ProjectionMatrix = BIT(3)
+        ModelMatrix = BIT(0), 
+        ViewMatrix = BIT(1), 
+        ProjectionMatrix = BIT(2),
+        ViewProjectionMatrix = BIT(3),
+        ModelViewProjectionMatrix = BIT(4),
     };
 
     struct ShaderSettings {
@@ -43,22 +45,25 @@ namespace  DWE {
     uint8_t operator& (const VertexDataFlag& a, const VertexDataFlag& b);
     uint8_t operator& (const uint8_t& a, const VertexDataFlag& b);
     uint8_t operator& (const VertexDataFlag& a, const uint8_t& b);
-    uint8_t operator|= (const VertexDataFlag& a, const VertexDataFlag& b);
-    uint8_t operator|= (const uint8_t& a, const VertexDataFlag& b);
-    uint8_t operator|= (const VertexDataFlag& a, const uint8_t& b);
-    uint8_t operator&= (const VertexDataFlag& a, const VertexDataFlag& b);
-    uint8_t operator&= (const uint8_t& a, const VertexDataFlag& b);
-    uint8_t operator&= (const VertexDataFlag& a, const uint8_t& b);
+
+    void operator|= (VertexDataFlag& a, const VertexDataFlag& b);
+    void operator|= (uint8_t& a, const VertexDataFlag& b);
+    void operator|= (VertexDataFlag& a, const uint8_t& b);
+    void operator&= (VertexDataFlag& a, const VertexDataFlag& b);
+    void operator&= (uint8_t& a, const VertexDataFlag& b);
+    void operator&= (VertexDataFlag& a, const uint8_t& b);
+
     uint8_t operator| (const UniformFlag& a, const UniformFlag& b);
     uint8_t operator| (const uint8_t& a, const UniformFlag& b);
     uint8_t operator| (const UniformFlag& a, const uint8_t& b);
     uint8_t operator& (const UniformFlag& a, const UniformFlag& b);
     uint8_t operator& (const uint8_t& a, const UniformFlag& b);
     uint8_t operator& (const UniformFlag& a, const uint8_t& b);
-    uint8_t operator|= (const UniformFlag& a, const UniformFlag& b);
-    uint8_t operator|= (const uint8_t& a, const UniformFlag& b);
-    uint8_t operator|= (const UniformFlag& a, const uint8_t& b);
-    uint8_t operator&= (const UniformFlag& a, const UniformFlag& b);
-    uint8_t operator&= (const uint8_t& a, const UniformFlag& b);
-    uint8_t operator&= (const UniformFlag& a, const uint8_t& b);
+
+    void operator|= (UniformFlag& a, const UniformFlag& b);
+    void operator|= (uint8_t& a, const UniformFlag& b);
+    void operator|= (UniformFlag& a, const uint8_t& b);
+    void operator&= (UniformFlag& a, const UniformFlag& b);
+    void operator&= (uint8_t& a, const UniformFlag& b);
+    void operator&= (UniformFlag& a, const uint8_t& b);
 }

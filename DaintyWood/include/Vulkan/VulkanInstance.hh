@@ -19,7 +19,9 @@ namespace DWE {
         vk::SurfaceKHR getSurface() const;
         vk::RenderPass getRenderPass() const;
         vk::Extent2D getSwapchainExtent() const;
+        uint32_t getSwapchainSize() const;
         uint32_t getMemoryType(uint32_t filter, vk::MemoryPropertyFlags prop) const;
+        VulkanUtils* getVulkanUtils() const;
     public:
         uint32_t waitAvailableFrameBuffer();
         vk::CommandBuffer getSingleTimeCommandsBegin();
@@ -50,7 +52,6 @@ namespace DWE {
     private:
         GLFWwindow* const _glfw_window;
         vk::ClearValue _clear_color{vk::ClearColorValue{0.0f,0.0f,0.0f,1.0f}};
-        const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
         uint32_t _current_frame = 0;
         uint32_t _current_image = 0;
     private:

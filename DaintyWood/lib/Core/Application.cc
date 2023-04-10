@@ -2,6 +2,10 @@
 
 #include "Vulkan/EntitySettings.hh"
 
+#include "Events/KeyEvents.hh"
+#include "Events/MouseEvents.hh"
+#include "Events/WindowEvents.hh"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
@@ -53,7 +57,9 @@ namespace DWE {
             } break;
             case EventType::KeyPress:
             {
-                _running = false; // temporary for fast debug
+                KeyPressEvent* p = dynamic_cast<KeyPressEvent*>(&e);
+                if (p->_code == 256)
+                    _running = false; // temporary for fast debug
             }
             default: break;
         }

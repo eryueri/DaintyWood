@@ -467,6 +467,7 @@ namespace DWE {
     vk::SurfaceKHR VulkanInstance::getSurface() const { return _surface; }
     vk::RenderPass VulkanInstance::getRenderPass() const { return _render_pass; }
     vk::Extent2D VulkanInstance::getSwapchainExtent() const { return _swapchain_extent; }
+    uint32_t VulkanInstance::getSwapchainSize() const { return _swapchain_images.size(); }
     uint32_t VulkanInstance::getMemoryType(uint32_t filter, vk::MemoryPropertyFlags prop) const
     {
         vk::PhysicalDeviceMemoryProperties properties = _gpu.getMemoryProperties();
@@ -477,6 +478,7 @@ namespace DWE {
         }
         throw std::runtime_error("cannot get proper memory type...");
     }
+    VulkanUtils* VulkanInstance::getVulkanUtils() const { return _util.get(); }
 
     void VulkanInstance::cleanInstance() { _instance.destroy(); }
     void VulkanInstance::cleanSurface() { _instance.destroySurfaceKHR(_surface); }

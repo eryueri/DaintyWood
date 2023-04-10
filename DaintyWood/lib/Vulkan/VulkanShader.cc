@@ -16,7 +16,7 @@ namespace DWE {
         return buffer;
     }
 
-    VulkanShader::VulkanShader(vk::Device device, ShaderSettings settings)
+    VulkanShader::VulkanShader(vk::Device device, const ShaderSettings& settings)
         : _device(device), 
         _shader_name(settings.shader_name.value()), 
         _compiled_file_path(settings.root_dir + settings.compiled_file_path.value()), 
@@ -49,29 +49,91 @@ namespace DWE {
         _shader_type = shader_type_map.at(settings.shader_type.value());
 
         for (const std::optional<std::string>& vertex_flag : settings.vertex_data_flags) {
-            _vertex_data_flags = _vertex_data_flags | vertex_flag_map.at(vertex_flag.value());
+            _vertex_data_flags |=  vertex_flag_map.at(vertex_flag.value());
         }
 
         for (const std::optional<std::string>& unifom_flag : settings.uniform_data_flags) {
-            _uniform_data_flags = _uniform_data_flags | uniform_flag_map.at(unifom_flag.value());
+            _uniform_data_flags |= uniform_flag_map.at(unifom_flag.value());
+        }
+
+        for (uint8_t count_helper = _vertex_data_flags; count_helper > 0; ++_vertex_data_flag_count) {
+            count_helper &= count_helper - 1;
+        }
+
+        for (uint8_t count_helper = _uniform_data_flags; count_helper > 0; ++_uniform_data_flag_count) {
+            count_helper &= count_helper - 1;
         }
 
         for (const std::optional<std::string>& sampler_name : settings.sampler_name_list) {
             _sampler_names.push_back(sampler_name.value());
         }
+        
+        switch(_shader_type) {
+            case ShaderType::Vertex: {
+                _shader_stage_flag_bits = vk::ShaderStageFlagBits::eVertex;
+            } break;
+            case ShaderType::Fragment: {
+                _shader_stage_flag_bits = vk::ShaderStageFlagBits::eFragment;
+            } break;
+            case ShaderType::Geometry: {
+                _shader_stage_flag_bits = vk::ShaderStageFlagBits::eGeometry;
+            } break;
+            case ShaderType::Compute: {
+                _shader_stage_flag_bits = vk::ShaderStageFlagBits::eCompute;
+            } break;
+            default: break;
+            }
 
+        createDescriptorSetLayout();
     }
 
     VulkanShader::~VulkanShader()
     {
-
+        cleanDescriptorSetLayout();
     }
 
     void VulkanShader::createDescriptorSetLayout()
     {
-        if (!_uniform_data_flags) {
+        std::vector<vk::DescriptorSetLayoutBinding> bindings{};
+        uint32_t binding = 0;
+        for (const auto& sampler : _sampler_names) {
+            vk::DescriptorSetLayoutBinding sampler_binding{};
+            sampler_binding
+                .setBinding(binding)
+                .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                .setDescriptorCount(1)
+                .setStageFlags(_shader_stage_flag_bits)
+                .setPImmutableSamplers(nullptr);
 
+            bindings.push_back(sampler_binding);
+
+            ++binding;
         }
+        if (_uniform_data_flags) {
+            vk::DescriptorSetLayoutBinding uniform_binding{};
+            uniform_binding
+                .setBinding(binding)
+                .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                .setDescriptorCount(1)
+                .setStageFlags(_shader_stage_flag_bits)
+                .setPImmutableSamplers(nullptr);
+
+            bindings.push_back(uniform_binding);
+            
+            ++binding;
+        }
+
+        if (bindings.empty()) {
+            _descriptor_set_layout = nullptr;
+            return;
+        }
+
+        vk::DescriptorSetLayoutCreateInfo create_info{};
+        create_info
+            .setBindings(bindings);
+
+        _descriptor_set_layout = _device.createDescriptorSetLayout(create_info);
+        CHECK_NULL(_descriptor_set_layout);
     }
 
     void VulkanShader::createShaderModule()
@@ -91,14 +153,24 @@ namespace DWE {
         _device.destroy(_shader_bin);
     }
 
+    void VulkanShader::cleanDescriptorSetLayout() 
+    {
+        return ;
+    }
+
     ShaderType VulkanShader::getShaderType()
     {
         return _shader_type;
     }
 
-    uint8_t VulkanShader::getVertexDataFlag()
+    uint8_t VulkanShader::getVertexDataFlags()
     {
         return _vertex_data_flags;
+    }
+
+    uint8_t VulkanShader::getUniformDataFlags() 
+    {
+        return _uniform_data_flags;
     }
 
     vk::PipelineShaderStageCreateInfo VulkanShader::getStageInfo()
@@ -108,23 +180,8 @@ namespace DWE {
         vk::PipelineShaderStageCreateInfo pipeline_stage_create_info{};
         pipeline_stage_create_info
             .setModule(_shader_bin)
-            .setPName(_entry_point.c_str());
-
-        switch(_shader_type) {
-            case ShaderType::Vertex: {
-                pipeline_stage_create_info.setStage(vk::ShaderStageFlagBits::eVertex);
-            } break;
-            case ShaderType::Fragment: {
-                pipeline_stage_create_info.setStage(vk::ShaderStageFlagBits::eFragment);
-            } break;
-            case ShaderType::Geometry: {
-                pipeline_stage_create_info.setStage(vk::ShaderStageFlagBits::eGeometry);
-            } break;
-            case ShaderType::Compute: {
-                pipeline_stage_create_info.setStage(vk::ShaderStageFlagBits::eCompute);
-            } break;
-            default: break;
-            }
+            .setPName(_entry_point.c_str())
+            .setStage(_shader_stage_flag_bits);
 
         return pipeline_stage_create_info;
     }
@@ -243,6 +300,25 @@ namespace DWE {
     vk::DescriptorSetLayout VulkanShader::getDescriptorSetLayout()
     {
         return _descriptor_set_layout;
+    }
+
+    uint32_t VulkanShader::getUniformBufferCount()
+    {
+        return _uniform_data_flag_count;
+    }
+
+    uint32_t VulkanShader::getSamplerCount()
+    {
+        return _sampler_names.size();
+    }
+
+    std::vector<std::string> VulkanShader::getSamplerNameList()
+    {
+        return _sampler_names;
+    }
+
+    uint32_t VulkanShader::getUniformBufferSize() {
+        return 0;
     }
 
 }

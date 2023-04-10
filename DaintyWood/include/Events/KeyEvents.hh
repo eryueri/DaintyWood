@@ -15,8 +15,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-        
-    private:
         int _code;
     };
 
@@ -32,8 +30,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-        
-    private:
         int _code;
     };
 
@@ -49,8 +45,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-        
-    private:
         int _code;
     };
 }

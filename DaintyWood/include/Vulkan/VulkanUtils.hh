@@ -39,6 +39,30 @@ namespace DWE {
         vk::QueueFamilyProperties findQueueFamilyIndices(QueueFamilyIndices& indices);
         void querySwapChainSupport(SwapchainSupports& details);
         void setSwapchainDetails(const SwapchainSupports& supports, SwapchainDetails& details);
+
+        void allocateBufferMemory(
+                vk::DeviceSize size, 
+                vk::BufferUsageFlags usage, 
+                vk::MemoryPropertyFlags property, 
+                vk::Buffer& buffer, 
+                vk::DeviceMemory& memory);
+
+        void allocateImage(
+                uint32_t width, 
+                uint32_t height, 
+                vk::Format format, 
+                vk::ImageTiling tiling, 
+                vk::ImageUsageFlags usage, 
+                vk::MemoryPropertyFlags memory_property, 
+                vk::Image& image, 
+                vk::DeviceMemory& image_memory);
+
+        void createImageView(
+                const vk::Image& image, 
+                vk::Format format, 
+                vk::ImageView& image_view
+                );
+
     private:
         vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats);
         vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes);

@@ -9,6 +9,14 @@
     name = "TriangleMesh"
     filePath = "meshes/triangle.obj"
 
+[[Textures]]
+    name = "BasicTexture"
+    textureType = "ImageFile"
+    addressMode = "Repeat"
+    borderColor = "IntOpaqueBlack"
+    filePath = "textures/basic.jpg"
+    samplerName = "basicSampler"
+
 [[Shaders]]
     name = "EntityVertexShader"
     fileName = "../glslShaders/entity.vert.spv"

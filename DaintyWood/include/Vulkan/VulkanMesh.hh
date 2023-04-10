@@ -20,19 +20,13 @@ namespace DWE {
     class VulkanMesh {
     public:
         VulkanMesh() = delete;
-        VulkanMesh(VulkanInstance* instance, MeshSettings settings);
+        VulkanMesh(VulkanInstance* instance, const MeshSettings& settings);
         ~VulkanMesh();
     public:
         void writeDrawingCommands(uint8_t vertex_data_flags, uint32_t image_index);
     private:
         void createVertexBuffer(VertexDataFlag flag);
         void createIndexBuffer();
-        void createBufferMemory(
-                vk::DeviceSize size, 
-                vk::BufferUsageFlags usage, 
-                vk::MemoryPropertyFlags property, 
-                vk::Buffer& buffer, 
-                vk::DeviceMemory& memory);
         void copyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size);
         void createGeometryBuffers();
         void cleanGeometryBuffers();
@@ -43,7 +37,8 @@ namespace DWE {
         void processMesh(aiMesh* mesh, const aiScene* scene);
     private:
         std::string _mesh_name;
-        VulkanInstance* _instance;
+        VulkanInstance* _instance = nullptr;
+        VulkanUtils* _utils = nullptr;
     private:
         std::vector<glm::vec3> _vertex_positions;
         std::vector<glm::vec4> _vertex_colors;

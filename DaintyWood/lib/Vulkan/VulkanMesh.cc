@@ -8,8 +8,9 @@
 
 #include "Vulkan/Macro.hh"
 namespace DWE {
-    VulkanMesh::VulkanMesh(VulkanInstance* instance, MeshSettings settings) 
+    VulkanMesh::VulkanMesh(VulkanInstance* instance, const MeshSettings& settings) 
         : _instance(instance), 
+        _utils(instance->getVulkanUtils()), 
         _mesh_name(settings.mesh_name.value())
     {
         Assimp::Importer importer{};
@@ -48,7 +49,9 @@ namespace DWE {
                 _vertex_texcoords.push_back({0.0f, 0.0f});
             if (mesh->mColors[0])
                 _vertex_colors.push_back({mesh->mColors[0][i].r, mesh->mColors[0][i].g, mesh->mColors[0][i].b, mesh->mColors[0][i].a});
-            else 
+            else if (mesh->mNormals)
+                _vertex_colors.push_back({mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 1.0});
+            else
                 _vertex_colors.push_back({1.0f, 1.0f, 1.0f, 1.0f});
         }
 
@@ -150,7 +153,7 @@ namespace DWE {
 
         vk::Buffer staging_buffer{};
         vk::DeviceMemory staging_memory{};
-        createBufferMemory(
+        _utils->allocateBufferMemory(
                 size, 
                 vk::BufferUsageFlagBits::eTransferSrc, 
                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, 
@@ -160,9 +163,9 @@ namespace DWE {
         vk::Buffer buffer{};
         vk::DeviceMemory memory{};
 
-        createBufferMemory(
+        _utils->allocateBufferMemory(
                 size, 
-                vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, 
+                vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,         
                 vk::MemoryPropertyFlagBits::eDeviceLocal, 
                 buffer, 
                 memory);
@@ -188,13 +191,13 @@ namespace DWE {
 
         vk::Buffer staging_buffer{};
         vk::DeviceMemory staging_memory{};
-        createBufferMemory(
+        _utils->allocateBufferMemory(
                 size, 
                 vk::BufferUsageFlagBits::eTransferSrc, 
                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, 
                 staging_buffer, 
                 staging_memory);
-        createBufferMemory(
+        _utils->allocateBufferMemory(
                 size, 
                 vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, 
                 vk::MemoryPropertyFlagBits::eDeviceLocal, 
@@ -209,36 +212,6 @@ namespace DWE {
 
         device.freeMemory(staging_memory);
         device.destroyBuffer(staging_buffer);
-    }
-
-    void VulkanMesh::createBufferMemory(
-            vk::DeviceSize size, 
-            vk::BufferUsageFlags usage, 
-            vk::MemoryPropertyFlags property, 
-            vk::Buffer& buffer, 
-            vk::DeviceMemory& memory)
-    {
-        vk::Device device = _instance->getLogicalDevice();
-        vk::BufferCreateInfo buffer_create_info{};
-        buffer_create_info
-            .setSize(size)
-            .setUsage(usage)
-            .setSharingMode(vk::SharingMode::eExclusive);
-
-        buffer = device.createBuffer(buffer_create_info);
-        CHECK_NULL(buffer);
-
-        vk::MemoryRequirements memory_requirements{};
-        memory_requirements = device.getBufferMemoryRequirements(buffer);
-
-        vk::MemoryAllocateInfo memory_allocate_info{}; // TODO: memory allocation is limited under 4096, implement a better memory allocation stratage in the far future
-        memory_allocate_info
-            .setAllocationSize(memory_requirements.size)
-            .setMemoryTypeIndex(_instance->getMemoryType(memory_requirements.memoryTypeBits, property));
-
-        memory = device.allocateMemory(memory_allocate_info);
-        CHECK_NULL(memory);
-        device.bindBufferMemory(buffer, memory, 0);
     }
 
     void VulkanMesh::copyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size)

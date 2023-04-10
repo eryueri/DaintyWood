@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vulkan/VulkanEntity.hh"
+#include "Vulkan/UniformData.hh"
 
 struct GLFWwindow;
 namespace DWE {
@@ -15,6 +16,7 @@ namespace DWE {
         void setResourceManager(ResourceManager* resource_manager);
         void prepareEntities();
         void renderFrame();
+        float getAspectRatio();
     private:
         std::unique_ptr<VulkanInstance> _vulkan_instance;
         ResourceManager* _resource_manager = nullptr;

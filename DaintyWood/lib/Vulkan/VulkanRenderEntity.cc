@@ -5,7 +5,8 @@
 #include "Vulkan/Macro.hh"
 namespace DWE {
     VulkanRenderEntity::VulkanRenderEntity(VulkanInstance* instance, EntitySettings settings)
-        : _vulkan_instance(instance)
+        : _vulkan_instance(instance), 
+          _utils(instance->getVulkanUtils())
     {
         static std::map<std::string, EntityType> entity_type_map{
             {"RenderEntity", EntityType::RenderEntity}, 
@@ -39,6 +40,13 @@ namespace DWE {
 
     void VulkanRenderEntity::addShader(VulkanShader *shader)
     {
+        switch (shader->getShaderType()) {
+            case ShaderType::Vertex: _vertex_shader = shader; break;
+            case ShaderType::Fragment: _frag_shader = shader; break;
+            case ShaderType::Geometry:
+            case ShaderType::Compute:
+              break;
+            }
         _vulkan_shaders.push_back(shader);
     }
 
@@ -46,27 +54,34 @@ namespace DWE {
     {
         for (VulkanShader* shader : _vulkan_shaders) {
             if (shader->getShaderType() == ShaderType::Vertex) {
-                _vertex_data_flags = shader->getVertexDataFlag();
+                _vertex_data_flags = shader->getVertexDataFlags();
                 _vertex_shader = shader;
             }
             if (shader->getShaderType() == ShaderType::Fragment) {
                 _frag_shader = shader;
             }
+            _uniform_data_flags |= shader->getUniformDataFlags();
         }
 
+        createSamplers();
+        createUniformBuffers();
         createPipelineLayout();
         createPipeline();
+        createDescriptorPool();
+        createDescriptorSets();
+        updateDescriptorSets();
+    }
+
+    void VulkanRenderEntity::updateUniformData(const uint32_t& image_index, const UniformData& data)
+    {
+
     }
 
     void VulkanRenderEntity::writeDrawingCommands(uint32_t image_index)
     {
         vk::CommandBuffer command_buffer = _vulkan_instance->getRenderCommandBuffer(image_index);
         command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _graphics_pipeline);
-        if (!_vulkan_textures.empty()) {
-            for (VulkanTexture* texture : _vulkan_textures) {
-                texture->writeDrawingCommands(image_index);
-            }
-        }
+        command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline_layout, 0, getDescriptorSets(image_index), nullptr);
 
         if (!_vulkan_meshes.empty()) {
             for (VulkanMesh* mesh : _vulkan_meshes) {
@@ -77,21 +92,22 @@ namespace DWE {
 
     void VulkanRenderEntity::createPipelineLayout()
     {
-        std::vector<vk::DescriptorSetLayout> descriptor_set_layout{};
+        std::vector<vk::DescriptorSetLayout> descriptor_set_layouts{};
         if (!_vertex_shader || !_frag_shader) {
             throw std::runtime_error("shader needed not all initialized...");
         }
         vk::DescriptorSetLayout vertex_descriptor_set_layout = _vertex_shader->getDescriptorSetLayout();
         // CHECK_NULL(vertex_descriptor_set_layout);
-        descriptor_set_layout.push_back(vertex_descriptor_set_layout);
+        if (vertex_descriptor_set_layout)
+            descriptor_set_layouts.push_back(vertex_descriptor_set_layout);
         vk::DescriptorSetLayout fragment_descriptor_set_layout = _frag_shader->getDescriptorSetLayout();
         // CHECK_NULL(fragment_descriptor_set_layout);
-        descriptor_set_layout.push_back(fragment_descriptor_set_layout);
+        if (fragment_descriptor_set_layout)
+            descriptor_set_layouts.push_back(fragment_descriptor_set_layout);
 
         vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
         pipeline_layout_create_info
-            .setSetLayoutCount(0)
-            .setPSetLayouts(nullptr)
+            .setSetLayouts(descriptor_set_layouts)
             .setPushConstantRangeCount(0)
             .setPPushConstantRanges(nullptr);
 
@@ -207,7 +223,7 @@ namespace DWE {
             .setPMultisampleState(&multisampling_create_info)
             .setPDepthStencilState(&depth_stencil_create_info)
             .setPColorBlendState(&color_blend_create_info)
-            .setLayout(_pipeline_layout) // meight need refractor for furture use of multi render pass
+            .setLayout(_pipeline_layout) // might need refractor for furture use of multi render pass
             .setRenderPass(_vulkan_instance->getRenderPass())
             .setSubpass(0);
 
@@ -222,24 +238,234 @@ namespace DWE {
         _frag_shader->cleanShaderModule();
     }
 
+    void VulkanRenderEntity::createUniformBuffers()
+    {
+        vk::DeviceSize buffer_size = 0;
+        uint32_t swapchain_size = _vulkan_instance->getSwapchainSize();
+
+        for (const auto& shader : _vulkan_shaders) {
+            buffer_size += shader->getUniformBufferSize();
+        }
+
+        if (buffer_size == 0)
+            return;
+
+        _uniform_buffers.resize(swapchain_size);
+        _uniform_memories.resize(swapchain_size);
+        _memory_maps.resize(swapchain_size);
+
+        for (uint32_t i = 0; i < swapchain_size; ++i) {
+            _utils->allocateBufferMemory(
+                    buffer_size, 
+                    vk::BufferUsageFlagBits::eUniformBuffer, 
+                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, 
+                    _uniform_buffers[i], 
+                    _uniform_memories[i]);
+
+            vk::Result result = _vulkan_instance->getLogicalDevice().mapMemory(_uniform_memories[i], 0, buffer_size, vk::MemoryMapFlags(0), &_memory_maps[i]);
+            if (result != vk::Result::eSuccess) {
+                throw std::runtime_error("failed to map uniform buffer memory");
+            }
+        }
+    }
+
+    void VulkanRenderEntity::createSamplers() 
+    {
+        static const std::map<AddressMode, vk::SamplerAddressMode> address_mode = {
+            {AddressMode::Repeat, vk::SamplerAddressMode::eRepeat}, 
+            {AddressMode::MirroredRepeat, vk::SamplerAddressMode::eMirroredRepeat}, 
+            {AddressMode::ClampToEdge, vk::SamplerAddressMode::eClampToEdge}, 
+            {AddressMode::ClampToBorder, vk::SamplerAddressMode::eClampToBorder}, 
+            {AddressMode::MirrorClampToEdge, vk::SamplerAddressMode::eMirrorClampToEdge}, 
+        };
+
+        static const std::map<BorderColor, vk::BorderColor> border_color = {
+            {BorderColor::IntOpaqueBlack, vk::BorderColor::eIntOpaqueBlack}, 
+            {BorderColor::FloatOpaqueBlack, vk::BorderColor::eFloatOpaqueBlack}, 
+            {BorderColor::IntTransparentBlack, vk::BorderColor::eIntTransparentBlack}, 
+            {BorderColor::FloatTransparentBlack, vk::BorderColor::eFloatTransparentBlack}, 
+            {BorderColor::IntOpaqueWhite, vk::BorderColor::eIntOpaqueWhite}, 
+            {BorderColor::FloatOpaqueWhite, vk::BorderColor::eFloatOpaqueWhite}, 
+        };
+
+        vk::PhysicalDeviceProperties gpu_properties = _vulkan_instance->getGPU().getProperties();
+        vk::Device device = _vulkan_instance->getLogicalDevice();
+
+        for (const auto& texture : _vulkan_textures) {
+            SamplerInfo sampler_info = texture->getSamplerInfo();
+
+            vk::SamplerCreateInfo create_info{};
+            create_info
+                .setMagFilter(vk::Filter::eLinear)
+                .setMinFilter(vk::Filter::eLinear)
+                .setAddressModeU(address_mode.at(sampler_info.address_mode))
+                .setAddressModeV(address_mode.at(sampler_info.address_mode))
+                .setAddressModeW(address_mode.at(sampler_info.address_mode))
+                .setAnisotropyEnable(false)
+                .setMaxAnisotropy(gpu_properties.limits.maxSamplerAnisotropy)
+                .setBorderColor(border_color.at(sampler_info.border_color))
+                .setUnnormalizedCoordinates(false)
+                .setCompareEnable(false)
+                .setCompareOp(vk::CompareOp::eAlways)
+                .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+                .setMipLodBias(0.0f)
+                .setMinLod(0.0f)
+                .setMaxLod(0.0f);
+            
+            _samplers[sampler_info.sampler_name] = device.createSampler(create_info);
+            CHECK_NULL(_samplers.at(sampler_info.sampler_name));
+
+            _image_views[sampler_info.sampler_name] = texture->getImageView();
+        }
+    }
+
     void VulkanRenderEntity::createDescriptorPool()
     {
 
+        std::vector<vk::DescriptorPoolSize> pool_sizes{};
+
+        uint32_t uniform_buffer_count = 0;
+        uint32_t sampler_count = 0;
+        uint32_t swapchain_size = _vulkan_instance->getSwapchainSize();
+
+        for (const auto& shader : _vulkan_shaders) {
+            uniform_buffer_count += shader->getUniformBufferCount();
+            sampler_count += shader->getSamplerCount();
+        }
+
+        vk::DescriptorPoolSize uniform_pool_size{};
+        if (uniform_buffer_count > 0) {
+            uniform_pool_size
+                .setType(vk::DescriptorType::eUniformBuffer)
+                .setDescriptorCount(swapchain_size * uniform_buffer_count * MAX_FRAMES_IN_FLIGHT/* shader uniform buffer count multiply MAX_FRAME_IN_FLIGHT*/);
+            pool_sizes.push_back(uniform_pool_size);
+        }
+
+        vk::DescriptorPoolSize sampler_pool_size{};
+        if (sampler_count > 0) {
+            sampler_pool_size
+                .setType(vk::DescriptorType::eCombinedImageSampler)
+                .setDescriptorCount(swapchain_size * sampler_count * MAX_FRAMES_IN_FLIGHT);
+            pool_sizes.push_back(sampler_pool_size);
+        }
+
+        vk::DescriptorPoolCreateInfo create_info{};
+
+        create_info
+            .setPoolSizes(pool_sizes)
+            .setMaxSets(swapchain_size * MAX_FRAMES_IN_FLIGHT * _vulkan_shaders.size());
+
+        _descriptor_pool = _vulkan_instance->getLogicalDevice().createDescriptorPool(create_info);
+        CHECK_NULL(_descriptor_pool);
     }
 
     void VulkanRenderEntity::createDescriptorSets()
     {
+        uint32_t swapchain_size = _vulkan_instance->getSwapchainSize();
 
+        auto allocateDescriptorSets = [this, swapchain_size](VulkanShader* shader)
+        {
+            if (!shader->getDescriptorSetLayout())
+                return;
+            std::vector<vk::DescriptorSetLayout> layouts(swapchain_size, shader->getDescriptorSetLayout());
+            vk::DescriptorSetAllocateInfo allocate_info{};
+            allocate_info
+                .setDescriptorPool(_descriptor_pool)
+                .setSetLayouts(layouts);
+
+            _descriptor_sets[shader] = _vulkan_instance->getLogicalDevice().allocateDescriptorSets(allocate_info);
+        };
+
+        for (const auto& shader : _vulkan_shaders) {
+            allocateDescriptorSets(shader);
+        }
     }
 
     void VulkanRenderEntity::updateDescriptorSets()
     {
+        uint32_t swapchain_size = _vulkan_instance->getSwapchainSize();
+        uint32_t uniform_buffer_offset = 0;
+        vk::Device device = _vulkan_instance->getLogicalDevice();
 
+        auto updateDescriptorSets = [this, &swapchain_size, &uniform_buffer_offset, device](VulkanShader* shader) {
+            uint32_t uniform_buffer_size = shader->getUniformBufferSize();
+            for (uint32_t i = 0; i < swapchain_size; ++i) {
+                vk::DescriptorBufferInfo buffer_info{};
+                if (!_uniform_buffers.empty()) {
+                    buffer_info
+                        .setBuffer(_uniform_buffers[i])
+                        .setOffset(uniform_buffer_offset)
+                        .setRange(uniform_buffer_size);
+                    uniform_buffer_offset += uniform_buffer_size;
+
+                }
+
+                std::vector<vk::DescriptorImageInfo> image_infos;
+                for (const auto& sampler_name : shader->getSamplerNameList()) {
+                    vk::DescriptorImageInfo image_info{};
+                    image_info
+                        .setSampler(_samplers.at(sampler_name))
+                        .setImageView(_image_views.at(sampler_name))
+                        .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+                    image_infos.push_back(image_info);
+                }
+
+                std::vector<vk::WriteDescriptorSet> descriptor_writes;
+                uint32_t binding = 0;
+
+                if (!image_infos.empty()) {
+                    for (const auto& image_info : image_infos) {
+                        vk::WriteDescriptorSet descriptor_write{};
+                        descriptor_write
+                            .setDstSet(_descriptor_sets[shader][i])
+                            .setDstBinding(binding)
+                            .setDstArrayElement(0)
+                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                            .setDescriptorCount(1)
+                            .setImageInfo(image_info);
+                        ++binding;
+                        descriptor_writes.push_back(descriptor_write);
+                    }
+                }
+
+                if (!_uniform_buffers.empty()) {
+                    vk::WriteDescriptorSet descriptor_write{};
+                    descriptor_write
+                        .setDstSet(_descriptor_sets[shader][i])
+                        .setDstBinding(binding)
+                        .setDstArrayElement(0)
+                        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                        .setDescriptorCount(1)
+                        .setBufferInfo(buffer_info);
+                        descriptor_writes.push_back(descriptor_write);
+                }
+
+                device.updateDescriptorSets(descriptor_writes, nullptr);
+
+            }
+        };
+
+        for (const auto& shader : _vulkan_shaders) {
+            updateDescriptorSets(shader);
+        }
     }
 
     void VulkanRenderEntity::updateDescriptorSet()
     {
 
+    }
+
+    std::vector<vk::DescriptorSet> VulkanRenderEntity::getDescriptorSets(uint32_t image_index)
+    {
+        std::vector<vk::DescriptorSet> descriptor_sets;
+
+        for (const auto& shader : _vulkan_shaders) {
+            if (_descriptor_sets.count(shader)) {
+                descriptor_sets.push_back(_descriptor_sets.at(shader).at(image_index));
+            }
+        }
+
+        return descriptor_sets;
     }
 }
 #include "Vulkan/UnMacro.hh"

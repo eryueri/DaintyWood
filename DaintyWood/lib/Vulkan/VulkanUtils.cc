@@ -4,6 +4,7 @@
 
 #include "Vulkan/VulkanInstance.hh"
 
+#include "Vulkan/Macro.hh"
 namespace DWE {
     bool QueueFamilyIndices::isComplete()
     {
@@ -100,4 +101,95 @@ namespace DWE {
         return actual_extent;
     }
 
+    void VulkanUtils::allocateBufferMemory(
+            vk::DeviceSize size, 
+            vk::BufferUsageFlags usage, 
+            vk::MemoryPropertyFlags property, 
+            vk::Buffer &buffer, 
+            vk::DeviceMemory &memory)
+    {
+        vk::Device device = _instance->getLogicalDevice();
+        vk::BufferCreateInfo buffer_create_info{};
+        buffer_create_info
+            .setSize(size)
+            .setUsage(usage)
+            .setSharingMode(vk::SharingMode::eExclusive);
+
+        buffer = device.createBuffer(buffer_create_info);
+        CHECK_NULL(buffer);
+
+        vk::MemoryRequirements memory_requirements{};
+        memory_requirements = device.getBufferMemoryRequirements(buffer);
+
+        vk::MemoryAllocateInfo memory_allocate_info{}; // TODO: memory allocation is limited under 4096, implement a better memory allocation stratage in the far future
+        memory_allocate_info
+            .setAllocationSize(memory_requirements.size)
+            .setMemoryTypeIndex(_instance->getMemoryType(memory_requirements.memoryTypeBits, property));
+
+        memory = device.allocateMemory(memory_allocate_info);
+        CHECK_NULL(memory);
+        device.bindBufferMemory(buffer, memory, 0);
+    }
+
+    void VulkanUtils::allocateImage(
+            uint32_t width, 
+            uint32_t height, 
+            vk::Format format, 
+            vk::ImageTiling tiling, 
+            vk::ImageUsageFlags usage, 
+            vk::MemoryPropertyFlags memory_property, 
+            vk::Image &image, 
+            vk::DeviceMemory &image_memory)
+    {
+        vk::Device device = _instance->getLogicalDevice();
+
+        vk::ImageCreateInfo image_create_info{};
+        image_create_info
+            .setImageType(vk::ImageType::e2D)
+            .setExtent(vk::Extent3D{width, height, 1})
+            .setMipLevels(1)
+            .setArrayLayers(1)
+            .setFormat(format)
+            .setTiling(tiling)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setUsage(usage)
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setSharingMode(vk::SharingMode::eExclusive);
+
+        image = device.createImage(image_create_info);
+        CHECK_NULL(image);
+
+        vk::MemoryRequirements requirements = device.getImageMemoryRequirements(image);
+
+        vk::MemoryAllocateInfo memory_allocate_info{};
+        memory_allocate_info
+            .setAllocationSize(requirements.size)
+            .setMemoryTypeIndex(_instance->getMemoryType(requirements.memoryTypeBits, memory_property));
+
+        image_memory = device.allocateMemory(memory_allocate_info);
+        CHECK_NULL(image_memory);
+        device.bindImageMemory(image, image_memory, 0);
+    }
+
+    void VulkanUtils::createImageView(
+            const vk::Image& image, 
+            vk::Format format, 
+            vk::ImageView& image_view
+            )
+    {
+        vk::Device device = _instance->getLogicalDevice();
+        vk::ImageSubresourceRange range{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+        vk::ImageViewCreateInfo create_info{};
+        create_info
+            .setImage(image)
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(format)
+            .setSubresourceRange(range);
+
+        image_view = device.createImageView(create_info);
+        CHECK_NULL(image_view);
+    }
+
 }
+#include "Vulkan/UnMacro.hh"

@@ -16,8 +16,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         float _x_pos, _y_pos;
     };
 
@@ -34,8 +32,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         int _code;
     };
 
@@ -52,8 +48,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         int _code;
     };
 
@@ -70,8 +64,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         int _code;
     };
 
@@ -88,8 +80,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         float _x_offset, _y_offset;
     };
 

@@ -1,1 +1,3 @@
 #undef CHECK_NULL
+
+#undef MAX_FRAMES_IN_FLIGHT

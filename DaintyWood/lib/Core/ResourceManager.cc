@@ -35,15 +35,6 @@ namespace DWE {
     void ResourceManager::loadFile(std::string file) {
         toml::table config = toml::parse_file(_source_root_dir + file);
 
-        if (config["Textures"]) {
-            if (!config["Textures"].is_array()) throw std::runtime_error("Textures sould be configured as array of tables");
-            toml::array& texture_config = *config["Textures"].as_array();
-            for (const toml::node& config : texture_config) {
-                if (!config.is_table()) 
-                    throw std::runtime_error("texture config is not proper...");
-                toml::table texture = *config.as_table();
-            }
-        }
         if (config["Meshes"]) {
             if (!config["Meshes"].is_array()) throw std::runtime_error("Meshes sould be configured as array of tables");
             toml::array& mesh_config = *config["Meshes"].as_array();
@@ -52,6 +43,16 @@ namespace DWE {
                     throw std::runtime_error("mesh config is not proper...");
                 toml::table mesh = *config.as_table();
                 loadMesh(mesh);
+            }
+        }
+        if (config["Textures"]) {
+            if (!config["Textures"].is_array()) throw std::runtime_error("Textures sould be configured as array of tables");
+            toml::array& texture_config = *config["Textures"].as_array();
+            for (const toml::node& config : texture_config) {
+                if (!config.is_table()) 
+                    throw std::runtime_error("texture config is not proper...");
+                toml::table texture = *config.as_table();
+                loadTexture(texture);
             }
         }
         if (config["Shaders"]) {
@@ -78,7 +79,20 @@ namespace DWE {
 
     void ResourceManager::loadTexture(toml::table texture)
     {
+        TextureSettings settings{};
+        settings.root_dir = _source_root_dir;
+        settings.file_path = texture["filePath"].value<std::string>();
+        settings.texture_name = texture["name"].value<std::string>();
+        settings.texture_type = texture["textureType"].value<std::string>();
+        settings.sampler_name = texture["samplerName"].value<std::string>();
+        settings.address_mode = texture["addressMode"].value<std::string>();
+        settings.border_color = texture["borderColor"].value<std::string>();
 
+        VulkanTexture* newTexture = new VulkanTexture(_vulkan_instance, settings);
+        if (_texture_map.count(settings.texture_name.value())) {
+            throw std::runtime_error("texture already existed: " + settings.texture_name.value() + "\nuse another name if do want this texture loaded");
+        }
+        _texture_map.insert({settings.texture_name.value(), newTexture});
     }
 
     void ResourceManager::loadMesh(toml::table mesh) 
@@ -117,8 +131,8 @@ namespace DWE {
                 settings.uniform_data_flags.push_back(flags.value<std::string>());
             }
         }
-        if (shader["samplernamelist"].is_array()) {
-            toml::array sampler_list = *shader["samplernamelist"].as_array();
+        if (shader["samplerNameList"].is_array()) {
+            toml::array sampler_list = *shader["samplerNameList"].as_array();
             for (const toml::node& sampler : sampler_list) {
                 settings.sampler_name_list.push_back(sampler.value<std::string>());
             }

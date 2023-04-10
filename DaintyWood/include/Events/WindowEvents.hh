@@ -30,8 +30,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         int _resize_width, _resize_height;
     };
 
@@ -48,8 +46,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose()  override;
 #endif
-
-    private:
         int _move_to_x, _move_to_y;
     };
 
@@ -66,8 +62,6 @@ namespace DWE {
 #ifdef DWE_DEBUG
         std::string verbose() override;
 #endif
-
-    private:
         int _focused;
     };
 }

@@ -27,6 +27,7 @@ add_library(DWE
 )
 target_include_directories(DWE
     PRIVATE
+    ../deps
     ./include
 )
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
