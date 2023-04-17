@@ -13,6 +13,12 @@ namespace DWE {
         _view_projection = _projection * _view;
     }
 
+    void Camera::writeUniformData(UniformData &data)
+    {
+        data.ViewMatrix = glm::lookAt(_position, _look_at, _up_direction);
+        data.ProjectionMatrix = glm::perspective(glm::radians(_fov), _aspect, _z_near, _z_far);
+    }
+
     glm::mat4 Camera::getViewMatrix() const { return _view; }
     glm::mat4 Camera::getProjectionMatrix() const { return _projection; }
     glm::mat4 Camera::getViewProjectionMatrix() const { return _view_projection; }

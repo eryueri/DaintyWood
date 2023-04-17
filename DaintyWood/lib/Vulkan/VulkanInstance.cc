@@ -11,12 +11,16 @@ namespace DWE {
         : _glfw_window(window), 
         _util(std::make_unique<VulkanUtils>(this))
     {
+        _clear_values[0].color = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f};
+        _clear_values[1].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
+
         createInstance();
         createSurface();
         pickGPU();
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createDepthResources();
         createRenderPass();
         createCommandPools();
         createPrimaryCommandBuffers();
@@ -219,17 +223,41 @@ namespace DWE {
         vk::SubpassDescription subpass_description{};
         subpass_description.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
                            .setColorAttachments(color_attachment_reference);
+
+        vk::AttachmentDescription depth_attachment_description{};
+        depth_attachment_description
+            .setFormat(_util->findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment))
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(vk::AttachmentLoadOp::eClear)
+            .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+        vk::AttachmentReference depth_attachment_reference{};
+        depth_attachment_reference
+            .setAttachment(1)
+            .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+        vk::SubpassDescription depth_subpass_description{};
+        depth_subpass_description
+            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+            .setColorAttachments(depth_attachment_reference);
+
+        std::vector<vk::AttachmentDescription> attachments = {color_attachment_description, depth_attachment_description};
+
         vk::SubpassDependency subpass_dependency{};
         subpass_dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
                           .setDstSubpass(0)
                           .setSrcAccessMask(vk::AccessFlagBits::eNone)
-                          .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-                          .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-                          .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+                          .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                          .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
+                          .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests);
         vk::RenderPassCreateInfo render_pass_create_info{};
 
         render_pass_create_info.setSubpasses(subpass_description)
-                               .setAttachments(color_attachment_description)
+                               .setAttachments(attachments)
                                .setDependencies(subpass_dependency);
 
         _render_pass = _logical_device.createRenderPass(render_pass_create_info);
@@ -299,9 +327,10 @@ namespace DWE {
         _framebuffers.resize(_swapchain_images.size());
 
         for (size_t i = 0; i < _framebuffers.size(); ++i) {
+            std::vector<vk::ImageView> attachments = {_image_views[i], _depth_image_view};
             vk::FramebufferCreateInfo framebuffer_create_info{};
             framebuffer_create_info.setRenderPass(_render_pass)
-                                   .setAttachments(_image_views[i])
+                                   .setAttachments(attachments)
                                    .setWidth(_swapchain_extent.width)
                                    .setHeight(_swapchain_extent.height)
                                    .setLayers(1);
@@ -329,6 +358,29 @@ namespace DWE {
             _inflight_fences[i] = _logical_device.createFence(fence_create_info);
             CHECK_NULL(_inflight_fences[i]);
         }
+    }
+
+    void VulkanInstance::createDepthResources()
+    {
+        vk::Format depth_format = _util->findSupportedFormat( // find depth format
+                {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, 
+                vk::ImageTiling::eOptimal, 
+                vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
+        _util->allocateImage(_swapchain_extent.width, 
+                _swapchain_extent.height, 
+                depth_format, 
+                vk::ImageTiling::eOptimal, 
+                vk::ImageUsageFlagBits::eDepthStencilAttachment, 
+                vk::MemoryPropertyFlagBits::eDeviceLocal, 
+                _depth_image, 
+                _depth_memory);
+
+        _util->createImageView(
+                _depth_image, 
+                depth_format, 
+                _depth_image_view, 
+                vk::ImageAspectFlagBits::eDepth);
     }
 
     vk::CommandBuffer VulkanInstance::getSingleTimeCommandsBegin()
@@ -408,7 +460,7 @@ namespace DWE {
             .setRenderPass(_render_pass)
             .setFramebuffer(_framebuffers[image_index])
             .setRenderArea(scissor)
-            .setClearValues(_clear_color);
+            .setClearValues(_clear_values);
 
         buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
         buffer.setViewport(0, 1, &viewport);

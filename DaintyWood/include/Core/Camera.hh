@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Vulkan/UniformData.hh"
+
 namespace DWE {
     struct CameraProperties {
         union Vertex {
@@ -18,6 +20,8 @@ namespace DWE {
     public:
         Camera() = delete;
         Camera(CameraProperties info);
+
+        void writeUniformData(UniformData& data);
 
         glm::mat4 getViewProjectionMatrix() const;
         glm::mat4 getViewMatrix() const;

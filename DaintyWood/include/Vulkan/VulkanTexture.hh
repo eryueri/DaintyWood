@@ -22,12 +22,6 @@ namespace DWE {
     private:
         void createTextureImage(std::string file_path);
         void createTextureImageView();
-        void transitionImageLayout(
-                vk::Image image,
-                vk::Format format,
-                vk::ImageLayout old_layout,
-                vk::ImageLayout new_layout
-                );
         void copyBufferToImage(vk::Buffer buffer, vk::Image image, const uint32_t& width, const uint32_t& height);
     private:
         VulkanInstance* _instance = nullptr;

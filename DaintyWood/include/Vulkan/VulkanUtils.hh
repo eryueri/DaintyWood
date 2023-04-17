@@ -60,15 +60,25 @@ namespace DWE {
         void createImageView(
                 const vk::Image& image, 
                 vk::Format format, 
-                vk::ImageView& image_view
+                vk::ImageView& image_view, 
+                vk::ImageAspectFlags aspect_flags
                 );
+
+        void transitionImageLayout(
+                vk::Image image,
+                vk::Format format,
+                vk::ImageLayout old_layout,
+                vk::ImageLayout new_layout
+                );
+
+        vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
     private:
         vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& available_formats);
         vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& available_modes);
         vk::Extent2D chooseSwapExtent(GLFWwindow* window, const vk::SurfaceCapabilitiesKHR& capabilities);
     private:
-        const VulkanInstance* _instance;
+        VulkanInstance* _instance;
     };
 
 }

@@ -70,11 +70,31 @@ namespace DWE {
         createDescriptorPool();
         createDescriptorSets();
         updateDescriptorSets();
+
+        uint32_t swapchain_size = _vulkan_instance->getSwapchainSize();
+        UniformData data{};
+        for (uint32_t i = 0; i < swapchain_size; ++i) {
+            updateUniformData(i, data);
+        }
     }
 
     void VulkanRenderEntity::updateUniformData(const uint32_t& image_index, const UniformData& data)
     {
+        if (_uniform_buffers.empty())
+            return;
 
+        uint32_t uniform_offset = 0;
+        for (const auto& shader : _vulkan_shaders) {
+            uint32_t uniform_size = shader->getUniformBufferSize();
+
+            uint8_t uniform_flags = shader->getUniformDataFlags();
+
+            auto data_buffer = data.getUniformData(uniform_flags);
+
+            memcpy((char*)_memory_maps[image_index] + uniform_offset, data_buffer.data(), data_buffer.size());
+
+            uniform_offset += uniform_size;
+        }
     }
 
     void VulkanRenderEntity::writeDrawingCommands(uint32_t image_index)
@@ -107,7 +127,8 @@ namespace DWE {
 
         vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
         pipeline_layout_create_info
-            .setSetLayouts(descriptor_set_layouts)
+            .setSetLayoutCount(descriptor_set_layouts.size())
+            .setPSetLayouts(descriptor_set_layouts.data())
             .setPushConstantRangeCount(0)
             .setPPushConstantRanges(nullptr);
 
@@ -191,8 +212,15 @@ namespace DWE {
 
         vk::PipelineDepthStencilStateCreateInfo depth_stencil_create_info{};
         depth_stencil_create_info
-            .setDepthTestEnable(false)
-            .setDepthWriteEnable(false);
+            .setDepthTestEnable(true)
+            .setDepthWriteEnable(true)
+            .setDepthCompareOp(vk::CompareOp::eLess)
+            .setDepthBoundsTestEnable(false)
+            .setMinDepthBounds(0.0f)
+            .setMaxDepthBounds(1.0f)
+            .setStencilTestEnable(false)
+            .setFront({})
+            .setBack({});
 
         vk::PipelineColorBlendAttachmentState color_blend_attachment{};
         color_blend_attachment
@@ -389,6 +417,10 @@ namespace DWE {
 
         auto updateDescriptorSets = [this, &swapchain_size, &uniform_buffer_offset, device](VulkanShader* shader) {
             uint32_t uniform_buffer_size = shader->getUniformBufferSize();
+
+            if (uniform_buffer_size == 0) 
+                return;
+
             for (uint32_t i = 0; i < swapchain_size; ++i) {
                 vk::DescriptorBufferInfo buffer_info{};
                 if (!_uniform_buffers.empty()) {
@@ -396,8 +428,6 @@ namespace DWE {
                         .setBuffer(_uniform_buffers[i])
                         .setOffset(uniform_buffer_offset)
                         .setRange(uniform_buffer_size);
-                    uniform_buffer_offset += uniform_buffer_size;
-
                 }
 
                 std::vector<vk::DescriptorImageInfo> image_infos;
@@ -443,6 +473,8 @@ namespace DWE {
                 device.updateDescriptorSets(descriptor_writes, nullptr);
 
             }
+
+            uniform_buffer_offset += uniform_buffer_size;
         };
 
         for (const auto& shader : _vulkan_shaders) {

@@ -1,5 +1,7 @@
 #include "Vulkan/VulkanShader.hh"
 
+#include <glm/glm.hpp>
+
 #include "Vulkan/Macro.hh"
 namespace DWE {
     static std::vector<char> readFromFile(const std::string& file)
@@ -318,7 +320,23 @@ namespace DWE {
     }
 
     uint32_t VulkanShader::getUniformBufferSize() {
-        return 0;
+        static const std::map<UniformFlag, uint32_t> uniform_sizes = {
+            {UniformFlag::None, 0},
+            {UniformFlag::ModelMatrix, sizeof(glm::mat4)},
+            {UniformFlag::ViewMatrix, sizeof(glm::mat4)},
+            {UniformFlag::ProjectionMatrix, sizeof(glm::mat4)},
+            {UniformFlag::ViewProjectionMatrix, sizeof(glm::mat4)},
+            {UniformFlag::ModelViewProjectionMatrix, sizeof(glm::mat4)},
+        };
+
+        uint32_t uniform_buffer_size = 0;
+        std::vector<UniformFlag> uniform_flags = uniformFlagsGrab(_uniform_data_flags);
+
+        for (const auto& flag : uniform_flags) {
+            uniform_buffer_size += uniform_sizes.at(flag);
+        }
+
+        return uniform_buffer_size;
     }
 
 }

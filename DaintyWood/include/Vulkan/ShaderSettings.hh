@@ -39,6 +39,8 @@ namespace  DWE {
 
     uint32_t vertexDataStride(VertexDataFlag flag);
 
+    std::vector<UniformFlag> uniformFlagsGrab(uint8_t flags);
+
     uint8_t operator| (const VertexDataFlag& a, const VertexDataFlag& b);
     uint8_t operator| (const uint8_t& a, const VertexDataFlag& b);
     uint8_t operator| (const VertexDataFlag& a, const uint8_t& b);

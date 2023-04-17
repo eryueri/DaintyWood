@@ -1,33 +1,33 @@
 [[Entities]]
     entityType = "RenderEntity"
     meshNames = ["TriangleMesh"]
-    cullMode = "FrontFace"
-    textureNames = []
+    cullMode = "BackFace"
+    textureNames = ["BasicTexture"]
     shaderNames = ["EntityVertexShader", "EntityFragmentShader"]
 
 [[Meshes]]
     name = "TriangleMesh"
-    filePath = "meshes/triangle.obj"
+    filePath = "meshes/viking.obj"
 
 [[Textures]]
     name = "BasicTexture"
     textureType = "ImageFile"
     addressMode = "Repeat"
     borderColor = "IntOpaqueBlack"
-    filePath = "textures/basic.jpg"
+    filePath = "textures/viking_room.png"
     samplerName = "basicSampler"
 
 [[Shaders]]
     name = "EntityVertexShader"
-    fileName = "../glslShaders/entity.vert.spv"
+    fileName = "./glslShaders/entity.vert.spv"
     shaderType = "VertexShader"
     entryPoint = "main"
     vertexInfo = { vertexDataFlags = ["Position", "Color", "TexCoord"] }
-    uniformInfo = { uniformFlags = [] }
+    uniformInfo = { uniformFlags = ["ModelMatrix", "ViewMatrix", "ProjectionMatrix"] }
 
 [[Shaders]]
     name = "EntityFragmentShader"
-    fileName = "../glslShaders/entity.frag.spv"
+    fileName = "./glslShaders/entity.frag.spv"
     shaderType = "FragmentShader"
     entryPoint = "main"
-    samplerNameList = [""]
+    samplerNameList = ["basicSampler"]

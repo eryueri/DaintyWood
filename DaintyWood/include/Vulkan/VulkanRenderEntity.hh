@@ -21,7 +21,7 @@ namespace DWE {
         void addShader(VulkanShader* shader);
         void initialize();
 
-        void updateUniformData(const uint32_t& image_index, const UniformData& data);
+        void updateUniformData(const uint32_t& image_index, const UniformData& data) override;
     private:
         void createPipelineLayout() override;
 

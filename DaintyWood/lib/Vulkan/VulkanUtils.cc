@@ -174,11 +174,12 @@ namespace DWE {
     void VulkanUtils::createImageView(
             const vk::Image& image, 
             vk::Format format, 
-            vk::ImageView& image_view
+            vk::ImageView& image_view, 
+            vk::ImageAspectFlags aspect_flags
             )
     {
         vk::Device device = _instance->getLogicalDevice();
-        vk::ImageSubresourceRange range{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+        vk::ImageSubresourceRange range{aspect_flags, 0, 1, 0, 1};
 
         vk::ImageViewCreateInfo create_info{};
         create_info
@@ -189,6 +190,89 @@ namespace DWE {
 
         image_view = device.createImageView(create_info);
         CHECK_NULL(image_view);
+    }
+
+    void VulkanUtils::transitionImageLayout(
+            vk::Image image, 
+            vk::Format format, 
+            vk::ImageLayout old_layout, 
+            vk::ImageLayout new_layout
+            )
+    {
+        vk::CommandBuffer command_buffer = _instance->getSingleTimeCommandsBegin();
+        vk::ImageMemoryBarrier barrier;
+        barrier
+            .setOldLayout(old_layout)
+            .setNewLayout(new_layout)
+            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+            .setImage(image)
+            .setSubresourceRange(vk::ImageSubresourceRange(
+                  vk::ImageAspectFlagBits::eColor, 
+                  0, 1, 0, 1
+                  ));
+
+        vk::PipelineStageFlags source_stage, dst_stage;
+
+        if (new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+            barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+            if (format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint) { // format has stencilComponent
+                barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+            }
+        } else {
+            barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+        }
+
+        if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal) {
+          barrier
+              .setSrcAccessMask(vk::AccessFlags(0))
+              .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+          source_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+          dst_stage = vk::PipelineStageFlagBits::eTransfer;
+        } else if (old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+          barrier
+              .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+              .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+          source_stage = vk::PipelineStageFlagBits::eTransfer;
+          dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+        } else if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+            barrier
+                .setSrcAccessMask(vk::AccessFlags(0))
+                .setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+            source_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+            dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+        }
+        else {
+          throw std::runtime_error("unsupported old/newLayout transfer...");
+        }
+
+        command_buffer.pipelineBarrier(
+            source_stage, dst_stage, 
+            vk::DependencyFlags(0), 
+            0, nullptr, 
+            0, nullptr, 
+            1, &barrier
+            );
+
+        _instance->getSingleTimeCommandsEnd();
+    }
+
+    vk::Format VulkanUtils::findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
+    {
+        vk::PhysicalDevice gpu = _instance->getGPU();
+        for (vk::Format format : candidates) {
+            vk::FormatProperties props;
+            props = gpu.getFormatProperties(format);
+
+            if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+                return format;
+            } else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+                return format;
+            }
+        }
+
+        throw std::runtime_error("failed to find supported format...");
     }
 
 }

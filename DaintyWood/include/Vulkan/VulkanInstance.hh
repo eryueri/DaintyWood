@@ -44,14 +44,23 @@ namespace DWE {
         void createSecondaryCommandBuffer(uint32_t image_index, uint32_t secondary_buffer_index);
         void createFramebuffers();
         void createSyncObjects();
+        void createDepthResources();
     private:
         void cleanInstance();
         void cleanSurface();
         void cleanLogicalDevice();
         void cleanSwapchain();
+        void cleanImageViews();
+        void cleanRenderPass();
+        void cleanCommandPools();
+        void cleanPrimaryCommandBuffers();
+        void cleanSecondaryCommandBuffers();
+        void cleanFrameBuffers();
+        void cleanSyncObjects();
+        void cleanDepthResources();
     private:
         GLFWwindow* const _glfw_window;
-        vk::ClearValue _clear_color{vk::ClearColorValue{0.0f,0.0f,0.0f,1.0f}};
+        std::array<vk::ClearValue, 2> _clear_values;
         uint32_t _current_frame = 0;
         uint32_t _current_image = 0;
     private:
@@ -71,6 +80,10 @@ namespace DWE {
         std::vector<std::vector<vk::CommandBuffer>> _secondary_command_buffers;
         vk::CommandBuffer _single_time_command_buffer = nullptr;
         std::vector<vk::Framebuffer> _framebuffers;
+
+        vk::Image _depth_image = nullptr;
+        vk::DeviceMemory _depth_memory = nullptr;
+        vk::ImageView _depth_image_view = nullptr;
 
         std::vector<vk::Semaphore> _image_available_semaphores;
         std::vector<vk::Semaphore> _render_finished_semaphores;

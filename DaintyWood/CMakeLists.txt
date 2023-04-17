@@ -9,6 +9,7 @@ include(./cmake/FindAssimp.cmake)
 add_library(DWE
     STATIC
     ./lib/Core/Application.cc
+    ./lib/Core/Camera.cc
     ./lib/Core/Logger.cc
     ./lib/Core/Window.cc
     ./lib/Core/Renderer.cc
@@ -18,6 +19,7 @@ add_library(DWE
     ./lib/Events/MouseEvents.cc
     ./lib/Events/WindowEvents.cc
     ./lib/Vulkan/ShaderSettings.cc
+    ./lib/Vulkan/UniformData.cc
     ./lib/Vulkan/VulkanInstance.cc
     ./lib/Vulkan/VulkanMesh.cc
     ./lib/Vulkan/VulkanRenderEntity.cc

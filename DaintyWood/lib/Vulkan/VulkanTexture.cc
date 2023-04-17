@@ -101,14 +101,14 @@ namespace DWE {
                 _image, 
                 _image_memory);
 
-        transitionImageLayout(
+        utils->transitionImageLayout(
                 _image, 
                 vk::Format::eR8G8B8A8Srgb, 
                 vk::ImageLayout::eUndefined, 
                 vk::ImageLayout::eTransferDstOptimal
                 );
         copyBufferToImage(staging_buffer, _image, tex_width, tex_height);
-        transitionImageLayout(
+        utils->transitionImageLayout(
                 _image, 
                 vk::Format::eR8G8B8A8Srgb, 
                 vk::ImageLayout::eTransferDstOptimal, 
@@ -121,56 +121,7 @@ namespace DWE {
 
     void VulkanTexture::createTextureImageView()
     {
-        _instance->getUtil()->createImageView(_image, vk::Format::eR8G8B8A8Srgb, _image_view);
-    }
-
-    void VulkanTexture::transitionImageLayout(
-            vk::Image image, 
-            vk::Format format, 
-            vk::ImageLayout old_layout, 
-            vk::ImageLayout new_layout
-            )
-    {
-        vk::CommandBuffer command_buffer = _instance->getSingleTimeCommandsBegin();
-        vk::ImageMemoryBarrier barrier;
-        barrier
-            .setOldLayout(old_layout)
-            .setNewLayout(new_layout)
-            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-            .setImage(image)
-            .setSubresourceRange(vk::ImageSubresourceRange(
-                  vk::ImageAspectFlagBits::eColor, 
-                  0, 1, 0, 1
-                  ));
-
-        vk::PipelineStageFlags source_stage, dst_stage;
-
-        if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal) {
-          barrier
-              .setSrcAccessMask(vk::AccessFlags(0))
-              .setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-          source_stage = vk::PipelineStageFlagBits::eTopOfPipe;
-          dst_stage = vk::PipelineStageFlagBits::eTransfer;
-        } else if (old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-          barrier
-              .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-              .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
-          source_stage = vk::PipelineStageFlagBits::eTransfer;
-          dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-        } else {
-          throw std::runtime_error("unsupported old/newLayout transfer...");
-        }
-
-        command_buffer.pipelineBarrier(
-            source_stage, dst_stage, 
-            vk::DependencyFlags(0), 
-            0, nullptr, 
-            0, nullptr, 
-            1, &barrier
-            );
-
-        _instance->getSingleTimeCommandsEnd();
+        _instance->getUtil()->createImageView(_image, vk::Format::eR8G8B8A8Srgb, _image_view, vk::ImageAspectFlagBits::eColor);
     }
 
     void VulkanTexture::copyBufferToImage(vk::Buffer buffer, vk::Image image, const uint32_t& width, const uint32_t& height)
